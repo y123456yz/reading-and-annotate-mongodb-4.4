@@ -98,6 +98,7 @@ class TransactionParticipant {
             kNone = 1 << 0,
             kInProgress = 1 << 1,
             kPrepared = 1 << 2,
+            //_finishCommitTransaction 事务已提交
             kCommitted = 1 << 3,
             kAbortedWithoutPrepare = 1 << 4,
             kAbortedWithPrepare = 1 << 5,
@@ -249,6 +250,7 @@ public:
         OperationContext* _opCtx;
     };
 
+    ////ActiveTransactionHistory.committedStatements为该类型
     using CommittedStatementTimestampMap = stdx::unordered_map<StmtId, repl::OpTime>;
 
     static const BSONObj kDeadEndSentinel;
@@ -910,6 +912,7 @@ private:
         repl::OpTime recoveryPrepareOpTime;
 
         // Tracks and updates transaction metrics upon the appropriate transaction event.
+        
         TransactionMetricsObserver transactionMetricsObserver;
     } _o;
 
@@ -933,9 +936,11 @@ private:
         //TransactionParticipant::Participant::addTransactionOperation中赋值
         //retrieveCompletedTransactionOperations中获取transactionOperations
         //clearOperationsInMemory和_resetTransactionState做clear操作
+        //本次事务中相关oplog记录到该数组中
         std::vector<repl::ReplOperation> transactionOperations;
 
         // Total size in bytes of all operations within the _transactionOperations vector.
+        //上面的transactionOperations数组中的所有operations的字节数，计算过程参考addTransactionOperation
         size_t transactionOperationBytes{0};
 
         // Number of operations that have pre-images to be written to noop oplog entries.

@@ -29,6 +29,7 @@
 
 #define MONGO_LOGV2_DEFAULT_COMPONENT ::mongo::logv2::LogComponent::kStorage
 
+//
 #define LOGV2_FOR_TRANSACTION(ID, DLEVEL, MESSAGE, ...) \
     LOGV2_DEBUG_OPTIONS(ID, DLEVEL, {logv2::LogComponent::kTransaction}, MESSAGE, ##__VA_ARGS__)
 
@@ -117,6 +118,7 @@ void fassertOnRepeatedExecution(const LogicalSessionId& lsid,
 
 struct ActiveTransactionHistory {
     boost::optional<SessionTxnRecord> lastTxnRecord;
+	
     TransactionParticipant::CommittedStatementTimestampMap committedStatements;
     bool hasIncompleteHistory{false};
 };
@@ -1237,6 +1239,7 @@ const repl::OpTime TransactionParticipant::Participant::getPrepareOpTimeForRecov
 
 //OpObserverImpl::onInserts  OpObserverImpl::onUpdate  OpObserverImpl::onDelete中调用
 //oplog记录到事务内存中，参考OpObserverImpl::onInserts
+//计算operation对应oplog的字节数
 void TransactionParticipant::Participant::addTransactionOperation(
     OperationContext* opCtx, const repl::ReplOperation& operation) {
 
@@ -1281,6 +1284,7 @@ TxnResponseMetadata TransactionParticipant::Participant::getResponseMetadata() {
             p().transactionOperations.empty()};
 }
 
+//清空相关计数，初始化为0
 void TransactionParticipant::Participant::clearOperationsInMemory(OperationContext* opCtx) {
     // Ensure that we only ever end a prepared or in-progress transaction.
     invariant(o().txnState.isInSet(TransactionState::kPrepared | TransactionState::kInProgress),
@@ -1300,6 +1304,7 @@ void TransactionParticipant::Participant::commitUnpreparedTransaction(OperationC
             !o().txnState.isPrepared());
 	//获取transactionOperations信息，也就是oplog信息
     auto txnOps = retrieveCompletedTransactionOperations(opCtx);
+	//获取oplog相关OpObserver
     auto opObserver = opCtx->getServiceContext()->getOpObserver();
     invariant(opObserver);
 
@@ -1314,8 +1319,9 @@ void TransactionParticipant::Participant::commitUnpreparedTransaction(OperationC
     // TODO (SERVER-41165): Snapshot read concern should wait on the read timestamp instead.
     auto wc = opCtx->getWriteConcern();
     auto needsNoopWrite = txnOps.empty() && !opCtx->getWriteConcern().usedDefault;
-
+	//本次事务操作涉及的oplog条数
     const size_t operationCount = p().transactionOperations.size();
+	//本次事务操作对应所有oplog字节数大小，transactionOperations计算参考addTransactionOperation
     const size_t oplogOperationBytes = p().transactionOperationBytes;
     clearOperationsInMemory(opCtx);
 
@@ -1479,14 +1485,19 @@ void TransactionParticipant::Participant::_finishCommitTransaction(
     {
         auto tickSource = opCtx->getServiceContext()->getTickSource();
         stdx::lock_guard<Client> lk(*opCtx->getClient());
+		//事务状态置为已提交
         o(lk).txnState.transitionTo(TransactionState::kCommitted);
 
+		//下面两个实现事务统计相关
+		
+		//TransactionMetricsObserver::onCommit
         o(lk).transactionMetricsObserver.onCommit(opCtx,
                                                   ServerTransactionsMetrics::get(opCtx),
                                                   tickSource,
                                                   &Top::get(opCtx->getServiceContext()),
                                                   operationCount,
                                                   oplogOperationBytes);
+		//TransactionMetricsObserver::onTransactionOperation
         o(lk).transactionMetricsObserver.onTransactionOperation(
             opCtx, CurOp::get(opCtx)->debug().additiveMetrics, o().txnState.isPrepared());
     }
@@ -1666,6 +1677,7 @@ void TransactionParticipant::Participant::_abortTransactionOnSession(OperationCo
 void TransactionParticipant::Participant::_cleanUpTxnResourceOnOpCtx(
     OperationContext* opCtx, TerminationCause terminationCause) {
     // Log the transaction if its duration is longer than the slowMS command threshold.
+    //事务日志记录
     _logSlowTransaction(
         opCtx,
         &(opCtx->lockState()->getLockerInfo(CurOp::get(*opCtx)->getLockStatsBase()))->stats,
@@ -2045,7 +2057,7 @@ std::string TransactionParticipant::Participant::_transactionInfoForLog(
     return s.str();
 }
 
-
+//生成对应日志，_logSlowTransaction中获取，然后写入日志文件
 void TransactionParticipant::Participant::_transactionInfoForLog(
     OperationContext* opCtx,
     const SingleThreadedLockStats* lockStats,
@@ -2208,11 +2220,17 @@ void TransactionParticipant::Participant::_logSlowTransaction(
                 .first) {
             logv2::DynamicAttributes attr;
             _transactionInfoForLog(opCtx, lockStats, terminationCause, readConcernArgs, &attr);
+			//{"t":{"$date":"2021-07-31T22:06:02.463+08:00"},"s":"I",  "c":"TXN",      "id":51802,   "ctx":"conn7","msg":"transaction",
+			//  "attr":{"parameters":{"lsid":{"id":{"$uuid":"bb4855bb-436c-4ae8-a414-38ee5809433e"},"uid":{"$binary":{"base64":"Y5mrDaxi8gv8RmdTsQ+1j7fmkr7JUsabhNmXAheU0fg=","subType":"0"}}},
+			//  "txnNumber":0,"autocommit":false,"readConcern":{"level":"local"}},"readTimestamp":"Timestamp(0, 0)","ninserted":2,"keysInserted":2,"terminationCause":"committed","timeActiveMicros":8177,
+			// "timeInactiveMicros":58916750,"numYields":0,"locks":{"ReplicationStateTransition":{"acquireCount":{"w":4}},"Global":{"acquireCount":{"r":1,"w":2}},"Database":{"acquireCount":{"w":4}},
+			// "Collection":{"acquireCount":{"w":4}},"Mutex":{"acquireCount":{"r":4}}},"storage":{"data":{"bytesRead":586,"timeReadingMicros":60}},"wasPrepared":false,"durationMillis":58924}}
             LOGV2_OPTIONS(51802, {logv2::LogComponent::kTransaction}, "transaction", attr);
         }
     }
 }
 
+//_beginMultiDocumentTransaction  _beginOrContinueRetryableWrite
 void TransactionParticipant::Participant::_setNewTxnNumber(OperationContext* opCtx,
                                                            const TxnNumber& txnNumber) {
     uassert(ErrorCodes::PreparedTransactionInProgress,

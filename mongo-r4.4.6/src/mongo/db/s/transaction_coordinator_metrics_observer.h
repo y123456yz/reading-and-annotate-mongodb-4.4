@@ -39,6 +39,20 @@ namespace mongo {
  * Updates transaction coordinator metrics (per- two-phase commit metrics and server-wide two-phase
  * commit metrics) upon the appropriate event.
  */
+
+/*
+The commit coordination metrics for a transaction whose write operations span multiple shards.
+
+Commit coordination is handled by a shard, and currentOp (run either on a mongos or a shard member) 
+returns a shard's coordination information only for those transactions currently being coordinated by that shard.
+*/
+ 
+//TransactionCoordinatorMetricsObserver和TransactionMetricsObserver的区别
+
+//$currentOp.twoPhaseCommitCoordinator.stepDurations 或者 currentOp.twoPhaseCommitCoordinator.stepDurations
+//参考https://docs.mongodb.com/manual/reference/operator/aggregation/currentOp/
+// https://docs.mongodb.com/manual/reference/command/currentOp/
+//分片模式下分布式事务两阶段提交相关，参考currentOp.twoPhaseCommitCoordinator     db.currentOp( { desc:  "transaction coordinator" })
 class TransactionCoordinatorMetricsObserver {
 
 public:

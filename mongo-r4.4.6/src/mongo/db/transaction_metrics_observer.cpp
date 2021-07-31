@@ -92,6 +92,8 @@ void TransactionMetricsObserver::onUnstash(ServerTransactionsMetrics* serverTran
     serverTransactionsMetrics->decrementCurrentInactive();
 }
 
+//事务统计相关
+//事务不提交的时候通过currentop获取   currentOp.transaction
 void TransactionMetricsObserver::onCommit(OperationContext* opCtx,
                                           ServerTransactionsMetrics* serverTransactionsMetrics,
                                           TickSource* tickSource,
@@ -128,6 +130,7 @@ void TransactionMetricsObserver::onCommit(OperationContext* opCtx,
 
     auto duration =
         durationCount<Microseconds>(_singleTransactionStats.getDuration(tickSource, curTick));
+	//事务时延统计
     top->incrementGlobalTransactionLatencyStats(static_cast<uint64_t>(duration));
 }
 

@@ -40,6 +40,28 @@ namespace mongo {
  *
  * For all timing related stats, a TickSource with at least microsecond resolution must be used.
  */
+
+
+/*
+"transaction" : {
+		"parameters" : {
+				"txnNumber" : NumberLong(1),
+				"autocommit" : false,
+				"readConcern" : {
+						"level" : "snapshot",
+						"afterClusterTime" : Timestamp(1627636326, 1)
+				}
+		},
+		"readTimestamp" : Timestamp(0, 0),
+		"startWallClockTime" : "2021-07-30T17:12:32.910+0800",
+		"timeOpenMicros" : NumberLong(2106390),
+		"timeActiveMicros" : NumberLong(94),
+		"timeInactiveMicros" : NumberLong(2106296),
+		"expiryTime" : "2021-07-30T17:13:32.910+0800"
+},
+事务不提交的时候通过currentop获取
+*/
+
 //TransactionMetricsObserver._singleTransactionStats为该类型
 class SingleTransactionStats {
 public:

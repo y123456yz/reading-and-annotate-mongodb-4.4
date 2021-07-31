@@ -32,7 +32,7 @@
 #include "mongo/db/op_observer.h"
 
 namespace mongo {
-
+//oplog相关操作接口
 class OpObserverImpl : public OpObserver {
     OpObserverImpl(const OpObserverImpl&) = delete;
     OpObserverImpl& operator=(const OpObserverImpl&) = delete;

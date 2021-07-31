@@ -41,6 +41,10 @@ namespace mongo {
  *
  * For all timing related stats, a TickSource with at least microsecond resolution must be used.
  */
+//$currentOp.twoPhaseCommitCoordinator.stepDurations
+//²Î¿¼https://docs.mongodb.com/manual/reference/operator/aggregation/currentOp/
+
+//TransactionCoordinatorMetricsObserver._singleTransactionCoordinatorStats
 class SingleTransactionCoordinatorStats {
 public:
     SingleTransactionCoordinatorStats() = default;

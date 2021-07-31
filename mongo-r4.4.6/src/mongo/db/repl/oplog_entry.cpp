@@ -268,6 +268,7 @@ OpTime MutableOplogEntry::getOpTime() const {
     return OpTime(getTimestamp(), term);
 }
 
+//oplog×Ü×Ö½ÚÊý
 size_t OplogEntry::getDurableReplOperationSize(const DurableReplOperation& op) {
     return sizeof(op) + op.getNss().size() + op.getObject().objsize() +
         (op.getObject2() ? op.getObject2()->objsize() : 0);

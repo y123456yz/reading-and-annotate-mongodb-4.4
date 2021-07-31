@@ -198,6 +198,8 @@ Microseconds SingleTransactionCoordinatorStats::getDeletingCoordinatorDocDuratio
     return tickSource->ticksTo<Microseconds>(curTick - _deletingCoordinatorDocStartTime);
 }
 
+//$currentOp.twoPhaseCommitCoordinator.stepDurations
+//²Î¿¼https://docs.mongodb.com/manual/reference/operator/aggregation/currentOp/
 void SingleTransactionCoordinatorStats::reportMetrics(BSONObjBuilder& parent,
                                                       TickSource* tickSource,
                                                       TickSource::Tick curTick) const {

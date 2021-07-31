@@ -214,6 +214,7 @@ void Top::appendGlobalLatencyStats(bool includeHistograms,
     _globalHistogramStats.append(includeHistograms, slowMSBucketsOnly, builder);
 }
 
+//事务延迟统计  db.serverstatus().opLatencies.transactions事务统计
 void Top::incrementGlobalTransactionLatencyStats(uint64_t latency) {
     stdx::lock_guard<SimpleMutex> guard(_lock);
     _globalHistogramStats.increment(latency, Command::ReadWriteType::kTransaction);

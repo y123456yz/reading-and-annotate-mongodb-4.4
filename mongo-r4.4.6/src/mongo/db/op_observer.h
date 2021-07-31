@@ -78,6 +78,7 @@ struct IndexCollModInfo {
  * to perform the operation being observed are still held. These rules should apply for all observer
  * methods unless otherwise specified.
  */
+//oplog相关，OpObserverImpl继承该类
 class OpObserver {
 public:
     enum class CollectionDropType {

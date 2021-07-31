@@ -44,6 +44,7 @@ constexpr auto warningSeverityString = "warning"_sd;
 constexpr auto infoSeverityString = "info"_sd;
 constexpr auto debugSeverityString = "debug"_sd;
 
+//db.setLogLevel(2)代表D2,以此类推
 constexpr StringData kDebugLevelStrings[LogSeverity::kMaxDebugLevel] = {
     "D1"_sd,
     "D2"_sd,
@@ -69,7 +70,8 @@ StringData LogSeverity::toStringData() const {
         return infoSeverityString;
     return unknownSeverityString;
 }
-
+//{"t":{"$date":"2021-07-31T22:05:03.537+08:00"},"s":"I",  "c":"COMMAND",  "id":51803,   "ctx":"conn7","msg":"Slow query",
+//log()日志打印中的"s"信息,表示info warning error等
 StringData LogSeverity::toStringDataCompact() const {
 
     if ((*this == LogSeverity::Log()) || (*this == LogSeverity::Info()))
