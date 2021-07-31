@@ -1,0 +1,113 @@
+# -*- mode: python -*-
+
+Import("env")
+
+env = env.Clone()
+
+env.Library(
+    target='update_common',
+    source=[
+        'field_checker.cpp',
+        'log_builder.cpp',
+        'path_support.cpp',
+        'storage_validation.cpp',
+    ],
+    LIBDEPS=[
+        '$BUILD_DIR/mongo/base',
+        '$BUILD_DIR/mongo/bson/mutable/mutable_bson',
+        '$BUILD_DIR/mongo/db/common',
+        '$BUILD_DIR/mongo/db/matcher/expressions',
+    ],
+)
+
+env.Library(
+    target='update',
+    source=[
+        'addtoset_node.cpp',
+        'arithmetic_node.cpp',
+        'array_culling_node.cpp',
+        'bit_node.cpp',
+        'compare_node.cpp',
+        'current_date_node.cpp',
+        'modifier_node.cpp',
+        'modifier_table.cpp',
+        'object_replace_executor.cpp',
+        'pipeline_executor.cpp',
+        'pop_node.cpp',
+        'pull_node.cpp',
+        'pullall_node.cpp',
+        'push_node.cpp',
+        'rename_node.cpp',
+        'set_node.cpp',
+        'unset_node.cpp',
+        'update_array_node.cpp',
+        'update_internal_node.cpp',
+        'update_leaf_node.cpp',
+        'update_node.cpp',
+        'update_object_node.cpp',
+    ],
+    LIBDEPS=[
+        '$BUILD_DIR/mongo/db/logical_clock',
+        '$BUILD_DIR/mongo/db/pipeline/pipeline',
+        '$BUILD_DIR/mongo/db/update_index_data',
+        'update_common',
+    ],
+)
+
+env.Library(
+    target='update_driver',
+    source=[
+        'update_driver.cpp',
+    ],
+    LIBDEPS=[
+        '$BUILD_DIR/mongo/base',
+        '$BUILD_DIR/mongo/db/common',
+        '$BUILD_DIR/mongo/db/ops/write_ops_parsers',
+        '$BUILD_DIR/mongo/db/query/query_planner',
+        '$BUILD_DIR/mongo/db/server_options_core',
+        'update',
+    ],
+)
+
+env.CppUnitTest(
+    target='db_update_test',
+    source=[
+        'addtoset_node_test.cpp',
+        'arithmetic_node_test.cpp',
+        'bit_node_test.cpp',
+        'compare_node_test.cpp',
+        'current_date_node_test.cpp',
+        'field_checker_test.cpp',
+        'log_builder_test.cpp',
+        'modifier_table_test.cpp',
+        'object_replace_executor_test.cpp',
+        'path_support_test.cpp',
+        'pipeline_executor_test.cpp',
+        'pop_node_test.cpp',
+        'pull_node_test.cpp',
+        'pullall_node_test.cpp',
+        'push_node_test.cpp',
+        'push_sorter_test.cpp',
+        'rename_node_test.cpp',
+        'set_node_test.cpp',
+        'unset_node_test.cpp',
+        'update_array_node_test.cpp',
+        'update_driver_test.cpp',
+        'update_object_node_test.cpp',
+        'update_serialization_test.cpp',
+    ],
+    LIBDEPS=[
+        '$BUILD_DIR/mongo/bson/mutable/mutable_bson',
+        '$BUILD_DIR/mongo/bson/mutable/mutable_bson_test_utils',
+        '$BUILD_DIR/mongo/db/exec/document_value/document_value_test_util',
+        '$BUILD_DIR/mongo/db/logical_clock',
+        '$BUILD_DIR/mongo/db/matcher/expressions',
+        '$BUILD_DIR/mongo/db/query/collation/collator_interface_mock',
+        '$BUILD_DIR/mongo/db/query/query_planner',
+        '$BUILD_DIR/mongo/db/query/query_test_service_context',
+        '$BUILD_DIR/mongo/db/service_context_test_fixture',
+        'update',
+        'update_common',
+        'update_driver',
+    ],
+)

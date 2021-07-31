@@ -1,0 +1,41 @@
+processManagement:
+  fork: true
+systemLog:
+  destination: file
+  path: /data1/mongodb/test_auth_repl_4.4.6/logs/mongod.log
+  logAppend: true
+storage:
+  journal:
+    enabled: true
+  dbPath: /data1/mongodb/test_auth_repl_4.4.6/data/
+  directoryPerDB: true
+  engine: wiredTiger
+  wiredTiger:
+    engineConfig:
+      cacheSizeGB: 2
+      directoryForIndexes: true
+    collectionConfig:
+      blockCompressor: snappy
+    indexConfig:
+      prefixCompression: true
+net:
+   port: 33330
+   maxIncomingConnections: 10000
+   bindIpAll: true
+
+operationProfiling:
+   slowOpThresholdMs: 0
+   mode: all
+
+replication:
+   oplogSizeMB: 10240
+   replSetName: test_auth_repl_4.4.6
+
+security:
+   keyFile: /data1/mongodb/test_auth_repl_4.4.6/keys/keyfile
+   clusterAuthMode: keyFile
+   authorization: enabled
+
+#sharding:
+#   clusterRole: shardsvr
+#   archiveMovedChunks: true

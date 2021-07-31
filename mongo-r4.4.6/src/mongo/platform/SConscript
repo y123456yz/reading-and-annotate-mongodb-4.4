@@ -1,0 +1,31 @@
+# -*- mode: python -*-
+
+Import("env")
+env = env.Clone()
+env.CppUnitTest(
+    target='platform_test',
+    source=[
+        'atomic_proxy_test.cpp',
+        'atomic_word_test.cpp',
+        'bits_test.cpp',
+        'endian_test.cpp',
+        'mutex_test.cpp',
+        'process_id_test.cpp',
+        'random_test.cpp',
+        'source_location_test.cpp',
+        'stack_locator_test.cpp',
+        'decimal128_test.cpp',
+        'decimal128_bson_test.cpp',
+        'overflow_arithmetic_test.cpp'
+    ],
+)
+
+env.Benchmark(
+    target='endian_bm',
+    source=[
+        'endian_bm.cpp',
+    ],
+    LIBDEPS=[
+    ],
+)
+

@@ -1,0 +1,53 @@
+# -*- mode: python -*-
+Import("env")
+
+env = env.Clone()
+
+env.Library(
+    target="idl_parser",
+    source=[
+        'idl_parser.cpp'
+    ],
+    LIBDEPS=[
+        '$BUILD_DIR/mongo/base',
+        '$BUILD_DIR/mongo/db/command_generic_argument',
+    ]
+)
+
+env.Library(
+    target='server_parameter',
+    source=[
+        'server_parameter.cpp',
+        'server_parameter_with_storage.cpp',
+    ],
+    LIBDEPS=[
+        '$BUILD_DIR/mongo/base',
+    ],
+    LIBDEPS_PRIVATE=[
+        '$BUILD_DIR/mongo/util/options_parser/options_parser',
+    ],
+)
+
+env.CppUnitTest(
+    target='idl_test',
+    source=[
+        'config_option_test.cpp',
+        'idl_test.cpp',
+        'server_parameter_specialized_test.cpp',
+        'server_parameter_with_storage_test.cpp',
+        'config_option_no_init_test.idl',
+        'config_option_test.idl',
+        'server_parameter_specialized_test.idl',
+        'server_parameter_with_storage_test.idl',
+        'unittest.idl',
+        'unittest_import.idl',
+    ],
+    LIBDEPS=[
+        '$BUILD_DIR/mongo/base',
+        '$BUILD_DIR/mongo/db/namespace_string',
+        '$BUILD_DIR/mongo/idl/idl_parser',
+        '$BUILD_DIR/mongo/util/cmdline_utils/cmdline_utils',
+        '$BUILD_DIR/mongo/util/options_parser/options_parser',
+        'server_parameter',
+    ],
+)

@@ -1,0 +1,27 @@
+test_kind: js_test
+
+selector:
+  roots:
+  - jstests/noPassthrough/*.js
+  - src/mongo/db/modules/*/jstests/hot_backups/*.js
+
+  # Self-tests for the Concurrency testing framework are run as part of this test suite.
+  - jstests/concurrency/*.js
+  exclude_files:
+  # Disable inmem_full as per SERVER-27014
+  - jstests/noPassthrough/inmem_full.js
+  # Multiversion backup-restore tests must run in the multiversion suite.
+  - src/mongo/db/modules/*/jstests/hot_backups/*last_stable*.js
+
+# noPassthrough tests start their own mongod's.
+executor:
+  archive:
+    tests:
+      - jstests/noPassthrough/backup*.js
+      - jstests/noPassthrough/rollback_wt_cache_full.js
+      - jstests/noPassthrough/wt_unclean_shutdown.js
+      - src/mongo/db/modules/enterprise/jstests/hot_backups/*.js
+  config:
+    shell_options:
+      nodb: ''
+      readMode: commands

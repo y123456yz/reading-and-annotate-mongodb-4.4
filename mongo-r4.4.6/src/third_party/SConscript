@@ -1,0 +1,701 @@
+# -*- mode: python -*-
+
+import SCons
+
+import libdeps
+import json
+
+Import("env use_system_version_of_library usemozjs get_option")
+Import("use_libunwind")
+Import("use_system_libunwind")
+Import("use_vendored_libunwind")
+Import("wiredtiger")
+
+boostSuffix = "-1.70.0"
+snappySuffix = '-1.1.7'
+zlibSuffix = '-1.2.11'
+zstdSuffix = '-1.4.3'
+pcreSuffix = "-8.42"
+mozjsSuffix = '-60'
+yamlSuffix = '-0.6.2'
+icuSuffix = '-57.1'
+gperftoolsSuffix = '-2.7'
+timelibSuffix = '-2018.01'
+tomcryptSuffix = '-1.18.2'
+benchmarkSuffix = '-1.4.1'
+
+thirdPartyEnvironmentModifications = {
+   'fmt' : {
+        'CPPPATH' : ['#src/third_party/fmt/dist/include'],
+   },
+   's2' : {
+        'CPPPATH' : ['#src/third_party/s2'],
+   },
+   'safeint' : {
+        'CPPPATH' : ['#src/third_party/SafeInt'],
+        # SAFEINT_USE_INTRINSICS=0 for overflow-safe constexpr multiply. See comment in SafeInt.hpp.
+        'CPPDEFINES' : [('SAFEINT_USE_INTRINSICS', 0)],
+   },
+   'timelib' : {
+        'CPPPATH' : ['#/src/third_party/timelib' + timelibSuffix],
+   },
+   'unwind' : {
+   },
+}
+
+def injectMozJS(thisEnv):
+    thisEnv.InjectThirdParty(libraries=['mozjs'])
+
+    if thisEnv.TargetOSIs('windows'):
+        thisEnv.Append(
+            CCFLAGS=[
+                '/FI', 'js-config.h',
+                '/FI', 'js/RequiredDefines.h',
+            ],
+            CPPDEFINES=[
+                '_SILENCE_CXX17_ITERATOR_BASE_CLASS_DEPRECATION_WARNING',
+            ]
+        )
+    else:
+        thisEnv.Append(
+            CCFLAGS=[
+                '-include', 'js-config.h',
+                '-include', 'js/RequiredDefines.h',
+            ],
+            CXXFLAGS=[
+                '-Wno-non-virtual-dtor',
+                '-Wno-invalid-offsetof',
+            ],
+        )
+
+    thisEnv.Prepend(CPPDEFINES=[
+        'JS_USE_CUSTOM_ALLOCATOR',
+        'STATIC_JS_API=1',
+    ])
+
+    if get_option('spider-monkey-dbg') == "on":
+        thisEnv.Prepend(CPPDEFINES=[
+            'DEBUG',
+            'JS_DEBUG',
+        ])
+
+env.AddMethod(injectMozJS, 'InjectMozJS');
+
+if not use_system_version_of_library('tcmalloc'):
+    # GPerftools does this slightly differently than the others.
+    thirdPartyEnvironmentModifications['gperftools'] = {}
+
+if not use_system_version_of_library('pcre'):
+    thirdPartyEnvironmentModifications['pcre'] = {
+        'CPPPATH' : ['#/src/third_party/pcre' + pcreSuffix],
+    }
+
+if not use_system_version_of_library('boost'):
+    thirdPartyEnvironmentModifications['boost'] = {
+        'CPPPATH' : ['#/src/third_party/boost' + boostSuffix],
+    }
+
+if not use_system_version_of_library('abseil-cpp'):
+    thirdPartyEnvironmentModifications['abseil-cpp'] = {
+        'CPPPATH' : ['#/src/third_party/abseil-cpp-master/abseil-cpp'],
+    }
+
+if not use_system_version_of_library('snappy'):
+    thirdPartyEnvironmentModifications['snappy'] = {
+        'CPPPATH' : ['#/src/third_party/snappy' + snappySuffix],
+    }
+
+# Valgrind is a header only include as valgrind.h includes everything we need
+if not use_system_version_of_library('valgrind'):
+    thirdPartyEnvironmentModifications['valgrind'] = {
+        'CPPPATH' : ['#/src/third_party/valgrind-3.14.0/include'],
+    }
+
+if not use_system_version_of_library('zlib'):
+    thirdPartyEnvironmentModifications['zlib'] = {
+        'CPPPATH' : ['#/src/third_party/zlib' + zlibSuffix],
+    }
+
+if not use_system_version_of_library('zstd'):
+    thirdPartyEnvironmentModifications['zstd'] = {
+        'CPPPATH' : ['#/src/third_party/zstandard' + zstdSuffix + '/zstd/lib'],
+    }
+
+if not use_system_version_of_library('google-benchmark'):
+    thirdPartyEnvironmentModifications['benchmark'] = {
+        'CPPPATH' : ['#/src/third_party/benchmark' + benchmarkSuffix + '/benchmark/include'],
+    }
+
+# TODO: figure out if we want to offer system versions of mozjs.  Mozilla
+# hasn't offered a source tarball since 24, but in theory they could.
+#
+#if not use_system_version_of_library('mozjs'):
+if True:
+    thirdPartyEnvironmentModifications['mozjs'] = {
+        'CPPPATH' : [
+            '#/src/third_party/mozjs' + mozjsSuffix + '/include',
+            '#/src/third_party/mozjs' + mozjsSuffix + '/mongo_sources',
+            '#/src/third_party/mozjs' + mozjsSuffix + '/platform/' + env["TARGET_ARCH"] + "/" + env["TARGET_OS"] + "/include",
+        ],
+    }
+
+if "tom" in env["MONGO_CRYPTO"]:
+    thirdPartyEnvironmentModifications['tomcrypt'] = {
+        'CPPPATH' : ['#/src/third_party/tomcrypt' + tomcryptSuffix + '/src/headers'],
+    }
+
+if not use_system_version_of_library('stemmer'):
+    thirdPartyEnvironmentModifications['stemmer'] = {
+        'CPPPATH' : ['#/src/third_party/libstemmer_c/include'],
+    }
+
+# Note that the wiredtiger.h header is generated, so
+# we want to look for it in the build directory not
+# the source directory.
+if wiredtiger and not use_system_version_of_library('wiredtiger'):
+    thirdPartyEnvironmentModifications['wiredtiger'] = {
+        'CPPPATH' : ['$BUILD_DIR/third_party/wiredtiger'],
+    }
+
+if not use_system_version_of_library('yaml'):
+    thirdPartyEnvironmentModifications['yaml'] = {
+        'CPPPATH' : ['#/src/third_party/yaml-cpp' + yamlSuffix + '/yaml-cpp/include'],
+        'CPPDEFINES' : ['_SILENCE_CXX17_ITERATOR_BASE_CLASS_DEPRECATION_WARNING'] if env.ToolchainIs('msvc') else [],
+    }
+
+if not use_system_version_of_library('asio'):
+    thirdPartyEnvironmentModifications['asio'] = {
+        'CPPPATH' : ['#/src/third_party/asio-master/asio/include'],
+    }
+
+if not use_system_version_of_library('intel_decimal128'):
+    thirdPartyEnvironmentModifications['intel_decimal128'] = {
+        'CPPPATH' : ['#/src/third_party/IntelRDFPMathLib20U1/LIBRARY'],
+    }
+
+if not use_system_version_of_library('icu'):
+    thirdPartyEnvironmentModifications['icu'] = {
+        'CPPPATH' : ['#/src/third_party/icu4c' + icuSuffix + '/source/common',
+                     '#/src/third_party/icu4c' + icuSuffix + '/source/i18n'],
+    }
+
+if not use_system_version_of_library('kms-message'):
+    thirdPartyEnvironmentModifications['kms-message'] = {
+        'CPPPATH' : ['#/src/third_party/kms-message/src'],
+        'CPPDEFINES' :['KMS_MSG_STATIC']
+    }
+
+if use_system_libunwind:
+    thirdPartyEnvironmentModifications['unwind'] = {
+        'SYSLIBDEPS' : [env['LIBDEPS_UNWIND_SYSLIBDEP'], 'lzma'],
+    }
+elif use_vendored_libunwind:
+    thirdPartyEnvironmentModifications['unwind'] = {
+        'LIBDEPS' : ['$BUILD_DIR/third_party/shim_unwind'],
+        'SYSLIBDEPS' : ['lzma'],
+    }
+
+def injectThirdParty(thisEnv, libraries=[], parts=[]):
+    libraries = thisEnv.Flatten([libraries])
+    parts = thisEnv.Flatten([parts])
+    for lib in libraries:
+        mods = thirdPartyEnvironmentModifications.get(lib, None)
+        if mods is None:
+            continue
+        if not parts:
+            thisEnv.PrependUnique(**mods)
+        else:
+            for part in parts:
+                thisEnv.PrependUnique({part : mods[part]})
+
+env.AddMethod(injectThirdParty, 'InjectThirdParty')
+
+# In a dynamic build, force everything to depend on shim_allocator, so
+# that it topsorts to the end of the list.  We are totally relying on
+# the fact that we are altering the env from src/SConscript
+if get_option('link-model').startswith("dynamic"):
+
+    for builder_name in ('Program', 'SharedLibrary', 'LoadableModule', 'StaticLibrary'):
+        builder = env['BUILDERS'][builder_name]
+        base_emitter = builder.emitter
+
+        def add_shim_allocator_hack(target, source, env):
+
+            # If we allowed conftests to become dependent, any TryLink
+            # that happened after we made the below modifications would
+            # cause the configure steps to try to compile tcmalloc and any
+            # of its dependencies. Oops!
+            if any('conftest' in str(t) for t in target):
+                return target, source
+
+            # It is possible that 'env' isn't a unique
+            # OverrideEnvironment, since if you didn't pass any kw args
+            # into your builder call, you just reuse the env you were
+            # called with. That could mean that we see the same
+            # envirnoment here multiple times. But that is really OK,
+            # since the operation we are performing would be performed on
+            # all of them anyway. The flag serves as a way to disable the
+            # auto-injection for the handful of libraries where we must do
+            # so to avoid forming a cycle.
+            if not env.get('DISABLE_ALLOCATOR_SHIM_INJECTION', False):
+                lds = env.get('LIBDEPS', [])
+                lds.append('$BUILD_DIR/third_party/shim_allocator')
+                env['LIBDEPS'] = lds
+
+            return target, source
+
+        builder.emitter = SCons.Builder.ListEmitter([add_shim_allocator_hack, base_emitter])
+
+env = env.Clone()
+
+murmurEnv = env.Clone()
+murmurEnv.InjectThirdParty(libraries=['fmt'])
+murmurEnv.SConscript('murmurhash3/SConscript', exports={ 'env' : murmurEnv })
+
+
+s2Env = env.Clone()
+s2Env.InjectThirdParty(libraries=['s2', 'boost', 'abseil-cpp', 'fmt', 'safeint'])
+s2Env.InjectMongoIncludePaths()
+s2Env.SConscript('s2/SConscript', exports={'env' : s2Env})
+
+if use_libunwind:
+    if use_system_libunwind:
+        unwindEnv = env.Clone(
+            SYSLIBDEPS=[
+                env['LIBDEPS_UNWIND_SYSLIBDEP'],
+            ])
+    else:
+        unwindEnv = env.Clone()
+
+        # SCons uses the "$CC" tool for both C and assembler files. Distinguish them for the sake of
+        # later tools like our Ninja SCons module.
+        unwindEnv['ASPP'] = '$CC'
+        unwindEnv['ASPPCOM'] = unwindEnv['ASPPCOM'].replace('$CC ', '$ASPP ')
+
+        def registerConsumerModifications(env, **kwargs):
+            for k,v in kwargs.items():
+                thirdPartyEnvironmentModifications['unwind'][k] = v
+
+        unwindEnv.AddMethod(registerConsumerModifications, 'RegisterConsumerModifications')
+        unwindEnv.SConscript('unwind/SConscript', exports={'env' : unwindEnv})
+        unwindEnv.Append(
+            LIBDEPS_INTERFACE=[
+                'unwind/unwind',
+            ])
+
+    unwindEnv.Library(
+        target="shim_unwind",
+        source=[
+            'shim_unwind.cpp',
+        ],
+        # We don't want the shim_allocator hack to apply to this library, since
+        # otherwise we would create a loop, since tcmalloc might use us. That should
+        # be OK, unless libunwind had static initializers that invoked malloc.
+        DISABLE_ALLOCATOR_SHIM_INJECTION=True,
+    )
+
+if use_system_version_of_library("fmt"):
+    fmtEnv = env.Clone(
+        SYSLIBDEPS=[
+            env['LIBDEPS_FMT_SYSLIBDEP'],
+        ])
+else:
+    fmtEnv = env.Clone()
+    fmtEnv.InjectThirdParty(libraries=['fmt'])
+    fmtEnv.InjectMongoIncludePaths()
+    fmtEnv.SConscript('fmt/SConscript', exports={'env' : fmtEnv})
+    fmtEnv = fmtEnv.Clone(
+        LIBDEPS_INTERFACE=[
+            'fmt/fmt',
+        ])
+
+fmtEnv.Library(
+    target="shim_fmt",
+    source=[
+        'shim_fmt.cpp',
+    ])
+
+
+if use_system_version_of_library("pcre"):
+    pcreEnv = env.Clone(
+        SYSLIBDEPS=[
+            env['LIBDEPS_PCRE_SYSLIBDEP'],
+            env['LIBDEPS_PCRECPP_SYSLIBDEP'],
+        ])
+else:
+    pcreEnv = env.Clone()
+    pcreEnv.InjectThirdParty(libraries=['pcre'])
+    pcreEnv.SConscript('pcre' + pcreSuffix + '/SConscript', exports={ 'env' : pcreEnv })
+    pcreEnv = pcreEnv.Clone(
+        LIBDEPS_INTERFACE=[
+            'pcre' + pcreSuffix + '/pcrecpp',
+        ])
+
+pcreEnv.Library(
+    target="shim_pcrecpp",
+    source=[
+        'shim_pcrecpp.cc',
+    ])
+
+
+boostEnv = env
+if use_system_version_of_library("boost"):
+    # On windows, we don't need the syslibdeps because autolib will select the right libraries
+    # for us automatically.
+    if not env.TargetOSIs('windows'):
+        boostEnv = env.Clone(
+            SYSLIBDEPS=[
+                env['LIBDEPS_BOOST_PROGRAM_OPTIONS_SYSLIBDEP'],
+                env['LIBDEPS_BOOST_FILESYSTEM_SYSLIBDEP'],
+                env['LIBDEPS_BOOST_SYSTEM_SYSLIBDEP'],
+                env['LIBDEPS_BOOST_IOSTREAMS_SYSLIBDEP'],
+                env['LIBDEPS_BOOST_THREAD_SYSLIBDEP'],
+                env['LIBDEPS_BOOST_LOG_SYSLIBDEP'],
+            ])
+else:
+    boostDirectory = 'boost' + boostSuffix
+    boostEnv = env.Clone()
+    boostEnv.InjectThirdParty(libraries=['boost'])
+    boostEnv.SConscript(boostDirectory + '/SConscript', exports={ 'env' : boostEnv })
+    boostEnv = boostEnv.Clone(
+        LIBDEPS_INTERFACE=[
+            boostDirectory + '/boost_program_options',
+            boostDirectory + '/boost_filesystem',
+            boostDirectory + '/boost_system',
+            boostDirectory + '/boost_iostreams',
+            boostDirectory + '/boost_log',
+        ])
+
+boostEnv.Library(
+    target="shim_boost",
+    source=[
+        'shim_boost.cpp',
+    ])
+
+abseilEnv = env
+if use_system_version_of_library("abseil-cpp"):
+    abseilEnv = env.Clone(
+        SYSLIBDEPS=[
+            env['LIBDEPS_ABSL_CONTAINER_SYSLIBDEP'],
+            env['LIBDEPS_ABSL_HASH_SYSLIBDEP'],
+        ])
+else:
+    abseilDirectory = 'abseil-cpp-master'
+    abseilEnv = env.Clone()
+    abseilEnv.InjectThirdParty(libraries=['abseil-cpp'])
+    abseilEnv.SConscript(abseilDirectory + '/SConscript', exports={ 'env' : abseilEnv })
+    abseilEnv = abseilEnv.Clone(
+        LIBDEPS_INTERFACE=[
+            abseilDirectory + '/absl_container',
+            abseilDirectory + '/absl_hash',
+        ])
+
+abseilEnv.Library(
+    target="shim_abseil",
+    source=[
+        'shim_abseil.cpp',
+    ])
+
+if use_system_version_of_library("snappy"):
+    snappyEnv = env.Clone(
+        SYSLIBDEPS=[
+            env['LIBDEPS_SNAPPY_SYSLIBDEP'],
+        ])
+else:
+    snappyEnv = env.Clone()
+    snappyEnv.InjectThirdParty(libraries=['snappy'])
+    snappyEnv.InjectMongoIncludePaths()
+    snappyEnv.SConscript('snappy' + snappySuffix + '/SConscript', exports={ 'env' : snappyEnv })
+    snappyEnv = snappyEnv.Clone(
+        LIBDEPS_INTERFACE=[
+            'snappy' + snappySuffix + '/snappy',
+        ])
+
+snappyEnv.Library(
+    target="shim_snappy",
+    source=[
+        'shim_snappy.cpp',
+    ])
+
+if use_system_version_of_library("zlib"):
+    zlibEnv = env.Clone(
+        SYSLIBDEPS=[
+            env['LIBDEPS_ZLIB_SYSLIBDEP'],
+        ])
+else:
+    zlibEnv = env.Clone()
+    zlibEnv.InjectThirdParty(libraries=['zlib'])
+    zlibEnv.SConscript('zlib' + zlibSuffix + '/SConscript', exports={ 'env' : zlibEnv })
+    zlibEnv = zlibEnv.Clone(
+        LIBDEPS_INTERFACE=[
+            'zlib' + zlibSuffix + '/zlib',
+        ])
+
+zlibEnv.Library(
+    target="shim_zlib",
+    source=[
+        'shim_zlib.cpp',
+    ])
+
+if use_system_version_of_library("zstd"):
+    zstdEnv = env.Clone(
+        SYSLIBDEPS=[
+            env['LIBDEPS_ZSTD_SYSLIBDEP'],
+        ])
+else:
+    zstdEnv = env.Clone()
+    zstdEnv.InjectThirdParty(libraries=['zstd'])
+    zstdEnv.SConscript('zstandard' + zstdSuffix + '/SConscript', exports={ 'env' : zstdEnv })
+    zstdEnv = zstdEnv.Clone(
+        LIBDEPS_INTERFACE=[
+            'zstandard' + zstdSuffix + '/zstd',
+        ])
+
+zstdEnv.Library(
+    target="shim_zstd",
+    source=[
+        'shim_zstd.cpp',
+    ])
+
+if use_system_version_of_library("google-benchmark"):
+    benchmarkEnv = env.Clone(
+        SYSLIBDEPS=[
+            env['LIBDEPS_BENCHMARK_SYSLIBDEP'],
+        ])
+else:
+    benchmarkEnv = env.Clone()
+    benchmarkEnv.InjectThirdParty(libraries=['benchmark'])
+    benchmarkEnv.SConscript(
+        'benchmark' + benchmarkSuffix + '/SConscript',
+        exports={ 'env' : benchmarkEnv })
+    benchmarkEnv = benchmarkEnv.Clone(
+        LIBDEPS_INTERFACE=[
+            'benchmark' + benchmarkSuffix + '/benchmark',
+        ])
+
+benchmarkEnv.Library(
+    target="shim_benchmark",
+    source=[
+        'shim_benchmark.cpp',
+    ])
+
+if usemozjs:
+    mozjsEnv = env.Clone()
+    mozjsEnv.SConscript('mozjs' + mozjsSuffix + '/SConscript', exports={'env' : mozjsEnv })
+    mozjsEnv = mozjsEnv.Clone(
+        LIBDEPS_INTERFACE=[
+            'mozjs' + mozjsSuffix + '/mozjs',
+            'shim_zlib',
+        ])
+
+    mozjsEnv.Library(
+        target="shim_mozjs",
+        source=[
+            'shim_mozjs.cpp',
+        ])
+
+if "tom" in env["MONGO_CRYPTO"]:
+    tomcryptEnv = env.Clone()
+    tomcryptEnv.SConscript('tomcrypt' + tomcryptSuffix + '/SConscript', exports={'env' : tomcryptEnv })
+    tomcryptEnv = tomcryptEnv.Clone(
+        LIBDEPS_INTERFACE=[
+            'tomcrypt' + tomcryptSuffix + '/tomcrypt',
+        ])
+
+    tomcryptEnv.Library(
+        target="shim_tomcrypt",
+        source=[
+            'shim_tomcrypt.cpp',
+        ])
+
+gperftoolsEnv = env
+if gperftoolsEnv['MONGO_ALLOCATOR'] in ["tcmalloc", "tcmalloc-experimental"]:
+    if use_system_version_of_library("tcmalloc"):
+        gperftoolsEnv = env.Clone(
+            SYSLIBDEPS=[
+                env['LIBDEPS_TCMALLOC_SYSLIBDEP'],
+            ])
+    else:
+        gperftoolsEnv = env.Clone()
+        gperftoolsEnv.InjectThirdParty(libraries=['gperftools'])
+        # Allow gperftools to determine its own consumer-side include/ dirs.
+        # Needed because those are in a platform-specific subdirectory.
+        def registerConsumerModifications(env, **kwargs):
+            for k,v in kwargs.items():
+                thirdPartyEnvironmentModifications['gperftools'][k] = v
+        gperftoolsEnv.AddMethod(registerConsumerModifications, 'RegisterConsumerModifications')
+        gperftoolsEnv.SConscript(
+            'gperftools' + gperftoolsSuffix + '/SConscript',
+            exports={'env' : gperftoolsEnv})
+        gperftoolsEnv = gperftoolsEnv.Clone(
+            LIBDEPS_INTERFACE=[
+                'gperftools' + gperftoolsSuffix + '/tcmalloc_minimal',
+            ])
+
+gperftoolsEnv.Library(
+    target="shim_allocator",
+    source=[
+        "shim_allocator.cpp",
+    ],
+    DISABLE_ALLOCATOR_SHIM_INJECTION=True,
+)
+
+
+if use_system_version_of_library("stemmer"):
+    stemmerEnv = env.Clone(
+        SYSLIBDEPS=[
+            env['LIBDEPS_STEMMER_SYSLIBDEP'],
+        ])
+else:
+    stemmerEnv = env.Clone()
+    stemmerEnv.InjectThirdParty(libraries=['stemmer'])
+    stemmerEnv.SConscript('libstemmer_c/SConscript', exports={ 'env' : stemmerEnv })
+    stemmerEnv = stemmerEnv.Clone(
+        LIBDEPS_INTERFACE=[
+             'libstemmer_c/stemmer',
+        ])
+
+stemmerEnv.Library(
+    target="shim_stemmer",
+    source=[
+        'shim_stemmer.cpp'
+    ])
+
+
+if use_system_version_of_library("yaml"):
+    yamlEnv = env.Clone(
+        SYSLIBDEPS=[
+            env['LIBDEPS_YAML_SYSLIBDEP'],
+        ])
+else:
+    yamlEnv = env.Clone()
+    yamlEnv.InjectThirdParty(libraries=['yaml', 'boost'])
+    yamlEnv.SConscript('yaml-cpp' + yamlSuffix + '/SConscript', exports={ 'env' : yamlEnv })
+    yamlEnv = yamlEnv.Clone(
+        LIBDEPS_INTERFACE=[
+            'yaml-cpp' + yamlSuffix + '/yaml',
+        ])
+
+yamlEnv.Library(
+    target="shim_yaml",
+    source=[
+        'shim_yaml.cpp',
+    ])
+
+timelibEnv = env.Clone()
+timelibEnv.InjectThirdParty(libraries=['timelib'])
+timelibEnv.SConscript('timelib' + timelibSuffix + '/SConscript', exports={ 'env' : timelibEnv })
+timelibEnv = timelibEnv.Clone(
+    LIBDEPS_INTERFACE=[
+        'timelib' + timelibSuffix + '/timelib',
+    ])
+
+timelibEnv.Library(
+    target='shim_timelib',
+    source=[
+        'shim_timelib.cpp',
+    ])
+
+if wiredtiger:
+    if use_system_version_of_library("wiredtiger"):
+        wiredtigerEnv = env.Clone(
+            SYSLIBDEPS=[
+                env['LIBDEPS_WIREDTIGER_SYSLIBDEP'],
+            ])
+    else:
+        wiredtigerEnv = env.Clone()
+        wiredtigerEnv.InjectThirdParty(libraries=['wiredtiger'])
+        wiredtigerEnv.SConscript('wiredtiger/SConscript', exports={ 'env' : wiredtigerEnv })
+        wiredtigerEnv = wiredtigerEnv.Clone(
+            LIBDEPS_INTERFACE=[
+                 'wiredtiger/wiredtiger',
+            ])
+
+    wiredtigerEnv.Library(
+        target="shim_wiredtiger",
+        source=[
+            'shim_wiredtiger.cpp'
+        ])
+
+if use_system_version_of_library("asio"):
+    # Normally, we would request LIBDEPS_ASIO_SYSLIBDEP here, but on most systems, the system asio
+    # will be header only so there is no library required. In the rare case where one is, it can be
+    # injected via LIBS= on the command line.
+    asioEnv = env.Clone()
+else:
+    asioEnv = env.Clone()
+    asioEnv.InjectThirdParty(libraries=['asio'])
+    asioEnv.SConscript('asio-master/SConscript', exports={ 'env' : asioEnv })
+    asioEnv = asioEnv.Clone(
+        LIBDEPS_INTERFACE=[
+            'asio-master/asio',
+        ])
+
+asioEnv.Library(
+    target="shim_asio",
+    source=[
+        'shim_asio.cpp'
+    ])
+
+if use_system_version_of_library("intel_decimal128"):
+    intelDecimal128Env = env.Clone(
+	SYSLIBDEPS=[
+	    env['LIBDEPS_INTEL_DECIMAL128_SYSLIBDEP'],
+	])
+else:
+    intelDecimal128Env = env.Clone()
+    intelDecimal128Env.InjectThirdParty(libraries=['intel_decimal128'])
+    intelDecimal128Env.SConscript('IntelRDFPMathLib20U1/SConscript', exports={ 'env' : intelDecimal128Env })
+    intelDecimal128Env = intelDecimal128Env.Clone(
+	LIBDEPS_INTERFACE=[
+	    'IntelRDFPMathLib20U1/intel_decimal128',
+	])
+
+intelDecimal128Env.Library(
+    target="shim_intel_decimal128",
+    source=[
+	'shim_intel_decimal128.cpp'
+    ])
+
+if use_system_version_of_library("icu"):
+    icuEnv = env.Clone(
+        SYSLIBDEPS=[
+            env['LIBDEPS_ICUDATA_SYSLIBDEP'],
+            env['LIBDEPS_ICUI18N_SYSLIBDEP'],
+            env['LIBDEPS_ICUUC_SYSLIBDEP'],
+        ])
+else:
+    icuEnv = env.Clone()
+    icuEnv.InjectThirdParty(libraries=['icu'])
+    icuEnv.SConscript('icu4c' + icuSuffix + '/source/SConscript', exports={ 'env' : icuEnv })
+    icuEnv = icuEnv.Clone(
+        LIBDEPS_INTERFACE=[
+            'icu4c' + icuSuffix + '/source/icu_i18n',
+        ])
+
+icuEnv.Library(
+    target='shim_icu',
+    source=[
+        'shim_icu.cpp',
+    ])
+
+if use_system_version_of_library("kms-message"):
+    kmsEnv = env.Clone(
+        SYSLIBDEPS=[
+            env['LIBDEPS_KMS-MESSAGE_SYSLIBDEP'],
+        ])
+else:
+    kmsEnv = env.Clone()
+    kmsEnv.InjectThirdParty(libraries=['kms-message'])
+    kmsEnv.SConscript('kms-message/SConscript', exports={ 'env' : kmsEnv })
+    kmsEnv = kmsEnv.Clone(
+        LIBDEPS_INTERFACE=[
+            'kms-message/kms-message',
+        ])
+
+kmsEnv.Library(
+    target="shim_kms_message",
+    source=[
+        'shim_kms_message.cpp',
+    ])
+

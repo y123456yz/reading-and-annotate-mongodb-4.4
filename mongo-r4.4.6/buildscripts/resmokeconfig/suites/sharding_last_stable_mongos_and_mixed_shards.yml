@@ -1,0 +1,56 @@
+test_kind: js_test
+
+selector:
+  roots:
+  - jstests/sharding/*.js
+  exclude_with_any_tags:
+  - multiversion_incompatible
+  - requires_fcv_44
+  - backport_required_multiversion
+  - sharding_last_lts_mongos_and_mixed_shards_backport_required_multiversion
+  exclude_files:
+  # Requires fix to SERVER-31689
+  - jstests/sharding/aggregation_currentop.js
+  # SERVER-33683: We added a restriction on using an aggregation within a transaction against
+  # mongos. This should be removed and the test can be adjusted and re-added to this passthrough.
+  - jstests/sharding/aggregations_in_session.js
+  # Enable when SERVER-43860 is backported by BACKPORT-5471 or 4.4 becomes last-stable
+  - jstests/sharding/agg_merge_hashed.js
+  - jstests/sharding/merge_from_stale_mongos.js
+  - jstests/sharding/merge_stale_on_fields.js
+  - jstests/sharding/refresh_sessions.js
+  - jstests/sharding/lookup.js
+  # Enable when 4.4 becomes last stable
+  - jstests/sharding/out_fails_to_replace_sharded_collection.js
+  - jstests/sharding/merge_from_stale_mongos.js
+  - jstests/sharding/migration_coordinator_basic.js
+  - jstests/sharding/migration_coordinator_killop_in_critical_section.js
+  - jstests/sharding/migration_coordinator_shutdown_in_critical_section.js
+  - jstests/sharding/test_stacked_migration_cleanup.js
+  # Enable when SERVER-44733 is backported
+  - jstests/sharding/change_streams_update_lookup_shard_metadata_missing.js
+  - jstests/sharding/repl_monitor_refresh.js
+  - jstests/sharding/retryable_write_error_labels.js
+  # Enable when SERVER-43310 is backported
+  - jstests/sharding/cluster_create_indexes_always_routes_through_primary.js
+  # These tests use the flag-guarded sharded $lookup parameter, which results in cursors being
+  # established from a shard instead of mongos. As of SERVER-46255, these requests will include the
+  # 'clientOperationKey' which is not recognizable on 'last-stable' shards.
+  - jstests/sharding/lookup_on_shard.js
+  - jstests/sharding/lookup_stale_mongos.js
+
+  # This tag file can be created using ./buildscripts/evergreen_gen_multiversion_tests.py
+  # or downloaded from the evergreen task.
+  tag_file: multiversion_exclude_tags.yml
+
+executor:
+  config:
+    shell_options:
+      global_vars:
+        TestData:
+          mongosBinVersion: 'last-stable'
+          shardMixedBinVersions: true
+          skipCheckingUUIDsConsistentAcrossCluster: true
+          # TODO: SERVER-45959 remove after v4.4
+          skipCheckOrphans: true
+      nodb: ''

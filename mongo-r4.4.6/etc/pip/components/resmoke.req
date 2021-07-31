@@ -1,0 +1,8 @@
+PyKMIP == 0.4.0 # It's now 0.8.0. We're far enough back to have API conflicts.
+evergreen.py == 2.1.0
+jinja2
+mock
+shrub.py == 1.1.0
+ocspresponder == 0.5.0
+flask == 1.1.1
+ocspbuilder == 0.10.2
