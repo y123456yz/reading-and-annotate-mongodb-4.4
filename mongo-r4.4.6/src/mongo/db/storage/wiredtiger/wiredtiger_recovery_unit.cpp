@@ -60,6 +60,7 @@ MONGO_FAIL_POINT_DEFINE(doUntimestampedWritesForIdempotencyTests);
 
 using Section = WiredTigerOperationStats::Section;
 
+//慢日志中的"storage":{"data":{"bytesRead":3679,"timeReadingMicros":58}}
 std::map<int, std::pair<StringData, Section>> WiredTigerOperationStats::_statNameMap = {
     {WT_STAT_SESSION_BYTES_READ, std::make_pair("bytesRead"_sd, Section::DATA)},
     {WT_STAT_SESSION_BYTES_WRITE, std::make_pair("bytesWritten"_sd, Section::DATA)},
@@ -75,6 +76,7 @@ std::shared_ptr<StorageStats> WiredTigerOperationStats::getCopy() {
     return copy;
 }
 
+//WiredTigerRecoveryUnit::getOperationStatistics()
 void WiredTigerOperationStats::fetchStats(WT_SESSION* session,
                                           const std::string& uri,
                                           const std::string& config) {
@@ -901,6 +903,8 @@ void WiredTigerRecoveryUnit::beginIdle() {
     }
 }
 
+////CurOp::completeAndLogOperation   TransactionMetricsObserver::onTransactionOperation
+//慢日志中的"storage":{"data":{"bytesRead":3679,"timeReadingMicros":58}}等
 std::shared_ptr<StorageStats> WiredTigerRecoveryUnit::getOperationStatistics() const {
     std::shared_ptr<WiredTigerOperationStats> statsPtr(nullptr);
 
@@ -911,6 +915,7 @@ std::shared_ptr<StorageStats> WiredTigerRecoveryUnit::getOperationStatistics() c
     invariant(s);
 
     statsPtr = std::make_shared<WiredTigerOperationStats>();
+	//WiredTigerOperationStats::fetchStats  获取存储引擎统计信息
     statsPtr->fetchStats(s, "statistics:session", "statistics=(fast)");
 
     return statsPtr;

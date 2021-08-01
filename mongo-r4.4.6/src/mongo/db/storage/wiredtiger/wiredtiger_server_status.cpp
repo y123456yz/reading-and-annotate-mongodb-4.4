@@ -44,7 +44,7 @@
 namespace mongo {
 
 using std::string;
-
+//db.serverStatus().wiredTiger
 WiredTigerServerStatusSection::WiredTigerServerStatusSection(WiredTigerKVEngine* engine)
     : ServerStatusSection(kWiredTigerEngineName), _engine(engine) {}
 
@@ -52,6 +52,7 @@ bool WiredTigerServerStatusSection::includeByDefault() const {
     return true;
 }
 
+//db.serverStatus().wiredTiger
 BSONObj WiredTigerServerStatusSection::generateSection(OperationContext* opCtx,
                                                        const BSONElement& configElement) const {
     Lock::GlobalLock lk(opCtx, LockMode::MODE_IS);

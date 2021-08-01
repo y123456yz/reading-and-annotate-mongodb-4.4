@@ -810,6 +810,7 @@ Status WiredTigerUtil::_setTableLogging(WT_SESSION* session, const std::string& 
     return Status::OK();
 }
 
+//db.serverStatus().wiredTiger
 Status WiredTigerUtil::exportTableToBSON(WT_SESSION* session,
                                          const std::string& uri,
                                          const std::string& config,
@@ -817,6 +818,7 @@ Status WiredTigerUtil::exportTableToBSON(WT_SESSION* session,
     return exportTableToBSON(session, uri, config, bob, {});
 }
 
+//db.serverStatus().wiredTiger
 Status WiredTigerUtil::exportTableToBSON(WT_SESSION* session,
                                          const std::string& uri,
                                          const std::string& config,

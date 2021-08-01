@@ -173,6 +173,8 @@ void TransactionMetricsObserver::onAbort(ServerTransactionsMetrics* serverTransa
     }
 }
 
+
+//_stashActiveTransaction  _finishCommitTransaction   _abortActiveTransaction
 void TransactionMetricsObserver::onTransactionOperation(OperationContext* opCtx,
                                                         OpDebug::AdditiveMetrics additiveMetrics,
                                                         bool isPrepared) {

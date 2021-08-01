@@ -854,6 +854,8 @@ void WiredTigerKVEngine::notifyStartupComplete() {
     WiredTigerUtil::notifyStartupComplete();
 }
 
+
+//WiredTigerServerStatusSection::generateSection
 void WiredTigerKVEngine::appendGlobalStats(BSONObjBuilder& b) {
     BSONObjBuilder bb(b.subobjStart("concurrentTransactions"));
     {

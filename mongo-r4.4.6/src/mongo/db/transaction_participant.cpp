@@ -1487,6 +1487,7 @@ void TransactionParticipant::Participant::_commitStorageTransaction(OperationCon
     opCtx->lockState()->unsetMaxLockTimeout();
 }
 
+//_stashActiveTransaction  _finishCommitTransaction  
 void TransactionParticipant::Participant::_finishCommitTransaction(
     OperationContext* opCtx, size_t operationCount, size_t oplogOperationBytes) noexcept {
     {
@@ -1560,6 +1561,9 @@ void TransactionParticipant::Participant::_abortActivePreparedTransaction(Operat
 
     _abortActiveTransaction(opCtx, TransactionState::kPrepared);
 }
+
+
+
 
 void TransactionParticipant::Participant::_abortActiveTransaction(
     OperationContext* opCtx, TransactionState::StateSet expectedStates) {

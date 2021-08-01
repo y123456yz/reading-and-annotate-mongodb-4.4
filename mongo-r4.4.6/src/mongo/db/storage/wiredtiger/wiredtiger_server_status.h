@@ -38,6 +38,7 @@ class WiredTigerKVEngine;
 /**
  * Adds "wiredTiger" to the results of db.serverStatus().
  */
+//db.serverStatus().wiredTiger
 class WiredTigerServerStatusSection : public ServerStatusSection {
 public:
     WiredTigerServerStatusSection(WiredTigerKVEngine* engine);

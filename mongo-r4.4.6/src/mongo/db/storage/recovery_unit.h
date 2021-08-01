@@ -77,7 +77,7 @@ enum class PrepareConflictBehavior {
 /**
  * Storage statistics management class, with interfaces to provide the statistics in the BSON format
  * and an operator to add the statistics values.
- */
+ */ //db.XXX.aggregate( [ { $collStats: { storageStats: { } } } ] )
 class StorageStats {
     StorageStats(const StorageStats&) = delete;
     StorageStats& operator=(const StorageStats&) = delete;
@@ -108,12 +108,9 @@ public:
 /**
  * A RecoveryUnit is responsible for ensuring that data is persisted.
  * All on-disk information must be mutated through this interface.
+ * RecoveryUnit负责确保数据被持久化。所有磁盘上的信息都必须通过该接口进行修改。
  */
-/**
- * A RecoveryUnit is responsible for ensuring that data is persisted.
- * All on-disk information must be mutated through this interface.
- 一个recoveryunit负责确保数据持久化。所有磁盘上的信息都必须通过这个接口进行修改。
- */
+
 /*
 RecoveryUnit封装了wiredTiger层的事务。RecoveryUnit::_txnOpen 对应于WT层的beginTransaction。 
 RecoveryUnit::_txnClose封装了WT层的commit_transaction和rollback_transaction。

@@ -98,6 +98,8 @@ intrusive_ptr<DocumentSource> DocumentSourceCollStats::createFromBson(
     return collStats;
 }
 
+//collStats统计，参考https://docs.mongodb.com/v4.4/reference/operator/aggregation/collStats/
+//例如db.matrices.aggregate( [ { $collStats: { storageStats: { } } } ] )
 DocumentSource::GetNextResult DocumentSourceCollStats::doGetNext() {
     if (_finished) {
         return GetNextResult::makeEOF();

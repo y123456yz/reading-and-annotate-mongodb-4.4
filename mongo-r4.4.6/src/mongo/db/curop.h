@@ -261,6 +261,7 @@ public:
     AdditiveMetrics additiveMetrics;
 
     // Stores storage statistics.
+    //completeAndLogOperation赋值  OpDebug::report中打印， 慢日志打印 "storage":{"data":{"bytesRead":3679,"timeReadingMicros":58}}
     std::shared_ptr<StorageStats> storageStats;
 
     bool waitingForFlowControl{false};
