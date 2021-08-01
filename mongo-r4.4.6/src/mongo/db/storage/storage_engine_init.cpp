@@ -330,6 +330,7 @@ public:
             return;
         }
         opCtx->setLockState(std::make_unique<LockerImpl>());
+		//WiredTigerKVEngine::newRecoveryUnit()默认引擎用这个
         opCtx->setRecoveryUnit(std::unique_ptr<RecoveryUnit>(storageEngine->newRecoveryUnit()),
                                WriteUnitOfWork::RecoveryUnitState::kNotInUnitOfWork);
     }

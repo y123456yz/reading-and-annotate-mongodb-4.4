@@ -52,6 +52,7 @@ void RecoveryUnit::beginUnitOfWork(OperationContext* opCtx) {
     _setState(State::kInactiveInUnitOfWork);
 }
 
+//commitUnitOfWork()
 void RecoveryUnit::doCommitUnitOfWork() {
     invariant(_inUnitOfWork(), toString(_getState()));
 

@@ -168,6 +168,7 @@ WiredTigerRecoveryUnit::~WiredTigerRecoveryUnit() {
     _abort();
 }
 
+//WiredTigerRecoveryUnit::doCommitUnitOfWork()
 void WiredTigerRecoveryUnit::_commit() {
     // Since we cannot have both a _lastTimestampSet and a _commitTimestamp, we set the
     // commit time as whichever is non-empty. If both are empty, then _lastTimestampSet will
@@ -233,6 +234,7 @@ void WiredTigerRecoveryUnit::prepareUnitOfWork() {
     invariantWTOK(s->prepare_transaction(s, conf.c_str()));
 }
 
+//WriteUnitOfWork::commit()->RecoveryUnit::commitUnitOfWork->WiredTigerRecoveryUnit::doCommitUnitOfWork()µ÷ÓÃ
 void WiredTigerRecoveryUnit::doCommitUnitOfWork() {
     invariant(_inUnitOfWork(), toString(_getState()));
     _commit();

@@ -103,6 +103,8 @@ void WriteUnitOfWork::prepare() {
     _prepared = true;
 }
 
+//TransactionParticipant::Participant::_commitStorageTransaction
+//引擎层事务提交
 void WriteUnitOfWork::commit() {
     invariant(!_committed);
     invariant(!_released);
@@ -113,6 +115,8 @@ void WriteUnitOfWork::commit() {
         }
 
         _opCtx->recoveryUnit()->runPreCommitHooks(_opCtx);
+
+		//RecoveryUnit::commitUnitOfWork
         _opCtx->recoveryUnit()->commitUnitOfWork();
         _opCtx->_ruState = RecoveryUnitState::kNotInUnitOfWork;
     }

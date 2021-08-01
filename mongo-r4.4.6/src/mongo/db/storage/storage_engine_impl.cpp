@@ -604,11 +604,16 @@ void StorageEngineImpl::notifyStartupComplete() {
     _engine->notifyStartupComplete();
 }
 
+
+//onCreateOperationContext  OplogSlotReserver::OplogSlotReserver  TxnResources::TxnResources
+//SideTransactionBlock::SideTransactionBlock  _commitStorageTransaction  _cleanUpTxnResourceOnOpCtx
 RecoveryUnit* StorageEngineImpl::newRecoveryUnit() {
     if (!_engine) {
         // shutdown
         return nullptr;
     }
+
+	//WiredTigerKVEngine::newRecoveryUnit()默认引擎用这个
     return _engine->newRecoveryUnit();
 }
 

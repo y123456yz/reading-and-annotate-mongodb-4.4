@@ -45,6 +45,24 @@ class OperationContext;
  * the unit of work on the RecoveryUnit. If a low level WriteUnitOfWork aborts, any parents will
  * also abort.
  */
+//Dur_recovery_unit.h (mongo\src\mongo\db\storage\mmap_v1):class DurRecoveryUnit : public RecoveryUnit {
+//Ephemeral_for_test_recovery_unit.h (mongo\src\mongo\db\storage\ephemeral_for_test):class EphemeralForTestRecoveryUnit : public RecoveryUnit {
+//Heap_record_store_btree.h (mongo\src\mongo\db\storage\mmap_v1):class HeapRecordStoreBtreeRecoveryUnit : public RecoveryUnit {
+//Recovery_unit_noop.h (mongo\src\mongo\db\storage):class RecoveryUnitNoop : public RecoveryUnit {
+//Wiredtiger_recovery_unit.h (mongo\src\mongo\db\storage\wiredtiger):class WiredTigerRecoveryUnit final : public RecoveryUnit {
+
+/**
+ * A RecoveryUnit is responsible for ensuring that data is persisted.
+ * All on-disk information must be mutated through this interface.
+ 一个recoveryunit负责确保数据持久化。所有磁盘上的信息都必须通过这个接口进行修改。
+ */
+/*
+RecoveryUnit封装了wiredTiger层的事务。RecoveryUnit::_txnOpen 对应于WT层的beginTransaction。 
+RecoveryUnit::_txnClose封装了WT层的commit_transaction和rollback_transaction。
+*/
+//OperationContext::_recoveryUnit为RecoveryUnit类类型, WiredTigerRecoveryUnit继承该类
+//WiredTigerRecoveryUnit继承该类
+
 class WriteUnitOfWork {
     WriteUnitOfWork(const WriteUnitOfWork&) = delete;
     WriteUnitOfWork& operator=(const WriteUnitOfWork&) = delete;

@@ -664,6 +664,7 @@ void TransactionParticipant::Participant::_setReadSnapshot(OperationContext* opC
     opCtx->recoveryUnit()->preallocateSnapshot();
 }
 
+
 TransactionParticipant::OplogSlotReserver::OplogSlotReserver(OperationContext* opCtx,
                                                              int numSlotsToReserve)
     : _opCtx(opCtx), _globalLock(opCtx, MODE_IX) {
@@ -684,6 +685,7 @@ TransactionParticipant::OplogSlotReserver::OplogSlotReserver(OperationContext* o
     // Save the RecoveryUnit from the new transaction and replace it with an empty one.
     _recoveryUnit = opCtx->releaseRecoveryUnit();
     opCtx->setRecoveryUnit(std::unique_ptr<RecoveryUnit>(
+								//WiredTigerKVEngine::newRecoveryUnit()默认引擎用这个
                                opCtx->getServiceContext()->getStorageEngine()->newRecoveryUnit()),
                            WriteUnitOfWork::RecoveryUnitState::kNotInUnitOfWork);
 
@@ -745,6 +747,7 @@ TransactionParticipant::TxnResources::TxnResources(WithLock wl,
 
     _recoveryUnit = opCtx->releaseRecoveryUnit();
     opCtx->setRecoveryUnit(std::unique_ptr<RecoveryUnit>(
+						//WiredTigerKVEngine::newRecoveryUnit()默认引擎用这个
                                opCtx->getServiceContext()->getStorageEngine()->newRecoveryUnit()),
                            WriteUnitOfWork::RecoveryUnitState::kNotInUnitOfWork);
 
@@ -832,6 +835,7 @@ void TransactionParticipant::TxnResources::setNoEvictionAfterRollback() {
     _recoveryUnit->setNoEvictionAfterRollback();
 }
 
+
 TransactionParticipant::SideTransactionBlock::SideTransactionBlock(OperationContext* opCtx)
     : _opCtx(opCtx) {
     // Do nothing if we are already in a SideTransactionBlock. We can tell we are already in a
@@ -851,6 +855,7 @@ TransactionParticipant::SideTransactionBlock::SideTransactionBlock(OperationCont
     // transaction.
     _recoveryUnit = opCtx->releaseRecoveryUnit();
     opCtx->setRecoveryUnit(std::unique_ptr<RecoveryUnit>(
+								//WiredTigerKVEngine::newRecoveryUnit()默认引擎用这个
                                opCtx->getServiceContext()->getStorageEngine()->newRecoveryUnit()),
                            WriteUnitOfWork::RecoveryUnitState::kNotInUnitOfWork);
 }
@@ -1468,12 +1473,14 @@ void TransactionParticipant::Participant::commitPreparedTransaction(
 void TransactionParticipant::Participant::_commitStorageTransaction(OperationContext* opCtx) {
     invariant(opCtx->getWriteUnitOfWork());
     invariant(opCtx->lockState()->isRSTLLocked());
+	//WriteUnitOfWork::commit() 这里面进行事务提交
     opCtx->getWriteUnitOfWork()->commit();
     opCtx->setWriteUnitOfWork(nullptr);
 
     // We must clear the recovery unit and locker for the 'config.transactions' and oplog entry
     // writes.
     opCtx->setRecoveryUnit(std::unique_ptr<RecoveryUnit>(
+    							//WiredTigerKVEngine::newRecoveryUnit()默认引擎用这个
                                opCtx->getServiceContext()->getStorageEngine()->newRecoveryUnit()),
                            WriteUnitOfWork::RecoveryUnitState::kNotInUnitOfWork);
 
@@ -1674,6 +1681,9 @@ void TransactionParticipant::Participant::_abortTransactionOnSession(OperationCo
     _resetTransactionState(lk, nextState);
 }
 
+
+
+
 void TransactionParticipant::Participant::_cleanUpTxnResourceOnOpCtx(
     OperationContext* opCtx, TerminationCause terminationCause) {
     // Log the transaction if its duration is longer than the slowMS command threshold.
@@ -1696,6 +1706,7 @@ void TransactionParticipant::Participant::_cleanUpTxnResourceOnOpCtx(
     // We must clear the recovery unit and locker so any post-transaction writes can run without
     // transactional settings such as a read timestamp.
     opCtx->setRecoveryUnit(std::unique_ptr<RecoveryUnit>(
+    							//WiredTigerKVEngine::newRecoveryUnit()默认引擎用这个
                                opCtx->getServiceContext()->getStorageEngine()->newRecoveryUnit()),
                            WriteUnitOfWork::RecoveryUnitState::kNotInUnitOfWork);
 
