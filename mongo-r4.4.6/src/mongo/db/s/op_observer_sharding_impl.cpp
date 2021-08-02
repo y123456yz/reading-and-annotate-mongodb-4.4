@@ -209,6 +209,7 @@ void OpObserverShardingImpl::shardObserveDeleteOp(OperationContext* opCtx,
     }
 }
 
+//OpObserverImpl::onUnpreparedTransactionCommit
 void OpObserverShardingImpl::shardObserveTransactionPrepareOrUnpreparedCommit(
     OperationContext* opCtx,
     const std::vector<repl::ReplOperation>& stmts,

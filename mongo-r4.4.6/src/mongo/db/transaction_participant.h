@@ -944,6 +944,7 @@ private:
         size_t transactionOperationBytes{0};
 
         // Number of operations that have pre-images to be written to noop oplog entries.
+        ////OpObserverImpl::onDelete  OpObserverImpl::onUpdate÷–∏≥÷µ
         size_t numberOfPreImagesToWrite{0};
 
         // The autocommit setting of this transaction. Should always be false for multi-statement

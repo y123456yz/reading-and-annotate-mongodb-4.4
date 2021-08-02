@@ -169,7 +169,7 @@ const repl::OplogEntry getPreviousOplogEntry(OperationContext* opCtx,
     return prevOplogEntry;
 }
 
-
+//从回放事务oplog
 Status applyCommitTransaction(OperationContext* opCtx,
                               const OplogEntry& entry,
                               repl::OplogApplication::Mode mode) {

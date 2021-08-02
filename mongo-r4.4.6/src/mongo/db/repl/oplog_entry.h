@@ -72,6 +72,7 @@ public:
         return _fullPreImage;
     }
 
+    //OpObserverImpl::onDelete  OpObserverImpl::onUpdate
     void setPreImage(BSONObj value) {
         _fullPreImage = std::move(value);
     }

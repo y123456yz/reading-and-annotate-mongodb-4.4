@@ -202,6 +202,7 @@ public:
             }
         }
 
+		//ClusterFindCmd::run
         void run(OperationContext* opCtx, rpc::ReplyBuilderInterface* result) {
             CommandHelpers::handleMarkKillOnClientDisconnect(opCtx);
             // We count find command as a query op.

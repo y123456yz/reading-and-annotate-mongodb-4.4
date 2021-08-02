@@ -87,9 +87,12 @@ Date_t getWallClockTimeForOpLog(OperationContext* opCtx) {
     return clockSource->now();
 }
 
+//OpObserverImpl类的相关接口调用，参考OpObserverImpl.cpp
+//logApplyOpsForTransaction中调用
 repl::OpTime logOperation(OperationContext* opCtx, MutableOplogEntry* oplogEntry) {
     oplogEntry->setWallClockTime(getWallClockTimeForOpLog(opCtx));
     auto& times = OpObserver::Times::get(opCtx).reservedOpTimes;
+	//oplog.cpp中的logOp接口，写oplog
     auto opTime = repl::logOp(opCtx, oplogEntry);
     times.push_back(opTime);
     return opTime;
@@ -471,6 +474,7 @@ void OpObserverImpl::onInserts(OperationContext* opCtx,
         }
     }
 }
+
 
 void OpObserverImpl::onUpdate(OperationContext* opCtx, const OplogUpdateEntryArgs& args) {
     failCollectionUpdates.executeIf(
@@ -910,6 +914,9 @@ std::vector<repl::ReplOperation>::iterator packTransactionStatementsForApplyOps(
 // entry is written.
 //
 // Returns the optime of the written oplog entry.
+
+//logOplogEntriesForTransaction中调用
+//事务日志记录
 OpTimeBundle logApplyOpsForTransaction(OperationContext* opCtx,
                                        MutableOplogEntry* oplogEntry,
                                        boost::optional<DurableTxnStateEnum> txnState,
@@ -962,6 +969,7 @@ OpTimeBundle logApplyOpsForTransaction(OperationContext* opCtx,
 // skipping over some reserved slots.
 //
 // The number of oplog entries written is returned.
+//构造事务oplog写入oplog.rs表
 int logOplogEntriesForTransaction(OperationContext* opCtx,
                                   std::vector<repl::ReplOperation>* stmts,
                                   const std::vector<OplogSlot>& oplogSlots,
@@ -1080,6 +1088,7 @@ int logOplogEntriesForTransaction(OperationContext* opCtx,
     return numEntriesWritten;
 }
 
+//onPreparedTransactionCommit   OpObserverImpl::onTransactionAbort
 void logCommitOrAbortForPreparedTransaction(OperationContext* opCtx,
                                             MutableOplogEntry* oplogEntry,
                                             DurableTxnStateEnum durableState) {
@@ -1119,11 +1128,14 @@ void logCommitOrAbortForPreparedTransaction(OperationContext* opCtx,
 
 }  //  namespace
 
+//TransactionParticipant::Participant::commitUnpreparedTransaction
+//事务oplog记录
 void OpObserverImpl::onUnpreparedTransactionCommit(OperationContext* opCtx,
                                                    std::vector<repl::ReplOperation>* statements,
                                                    size_t numberOfPreImagesToWrite) {
     invariant(opCtx->getTxnNumber());
 
+	//分片或者副本集模式都返回true
     if (!opCtx->writesAreReplicated()) {
         return;
     }
@@ -1144,6 +1156,7 @@ void OpObserverImpl::onUnpreparedTransactionCommit(OperationContext* opCtx,
     }
 
     // Log in-progress entries for the transaction along with the implicit commit.
+    //构造事务oplog写入oplog.rs表 
     int numOplogEntries = logOplogEntriesForTransaction(
         opCtx, statements, oplogSlots, numberOfPreImagesToWrite, false);
     commitOpTime = oplogSlots[numOplogEntries - 1];
@@ -1208,6 +1221,8 @@ void OpObserverImpl::onTransactionPrepare(OperationContext* opCtx,
                     // will waste the extra slots.  The implicit prepare oplog entry will still use
                     // the last reserved slot, because the transaction participant has already used
                     // that as the prepare time.
+
+					//构造事务oplog写入oplog.rs表
                     logOplogEntriesForTransaction(opCtx,
                                                   statements,
                                                   reservedSlots,

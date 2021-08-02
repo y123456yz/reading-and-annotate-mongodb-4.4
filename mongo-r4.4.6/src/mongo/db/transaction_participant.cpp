@@ -1302,7 +1302,6 @@ void TransactionParticipant::Participant::clearOperationsInMemory(OperationConte
 
 
 //CmdCommitTxn::run  
-
 void TransactionParticipant::Participant::commitUnpreparedTransaction(OperationContext* opCtx) {
     uassert(ErrorCodes::InvalidOptions,
             "commitTransaction must provide commitTimestamp to prepared transaction.",
@@ -1313,6 +1312,7 @@ void TransactionParticipant::Participant::commitUnpreparedTransaction(OperationC
     auto opObserver = opCtx->getServiceContext()->getOpObserver();
     invariant(opObserver);
 
+	//OpObserverImpl::onUnpreparedTransactionCommit
     opObserver->onUnpreparedTransactionCommit(opCtx, &txnOps, p().numberOfPreImagesToWrite);
 
     // Read-only transactions with all read concerns must wait for any data they read to be majority
@@ -1328,6 +1328,7 @@ void TransactionParticipant::Participant::commitUnpreparedTransaction(OperationC
     const size_t operationCount = p().transactionOperations.size();
 	//本次事务操作对应所有oplog字节数大小，transactionOperations计算参考addTransactionOperation
     const size_t oplogOperationBytes = p().transactionOperationBytes;
+	//相关统计清空
     clearOperationsInMemory(opCtx);
 
     // _commitStorageTransaction can throw, but it is safe for the exception to be bubbled up to
@@ -1470,10 +1471,12 @@ void TransactionParticipant::Participant::commitPreparedTransaction(
     }
 }
 
+//通知存储引擎进行真正的事务提交
 void TransactionParticipant::Participant::_commitStorageTransaction(OperationContext* opCtx) {
     invariant(opCtx->getWriteUnitOfWork());
     invariant(opCtx->lockState()->isRSTLLocked());
-	//WriteUnitOfWork::commit() 这里面进行事务提交
+	//每个opCtx都会对应一个WriteUnitOfWork
+	//WriteUnitOfWork::commit() 这里面进行事务提交    
     opCtx->getWriteUnitOfWork()->commit();
     opCtx->setWriteUnitOfWork(nullptr);
 

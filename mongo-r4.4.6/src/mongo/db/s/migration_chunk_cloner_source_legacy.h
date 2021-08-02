@@ -64,6 +64,7 @@ public:
     /**
      * Invariant: idObj should belong to a document that is part of the active chunk being migrated
      */
+    //shardObserveTransactionPrepareOrUnpreparedCommit中构造使用
     LogTransactionOperationsForShardingHandler(ServiceContext* svcCtx,
                                                const std::vector<repl::ReplOperation>& stmts,
                                                const repl::OpTime& prepareOrCommitOpTime)

@@ -562,6 +562,7 @@ void CatalogCache::purgeAllDatabases() {
     _collectionsByDb.clear();
 }
 
+//db.serverstatus().shardingStatistics
 void CatalogCache::report(BSONObjBuilder* builder) const {
     BSONObjBuilder cacheStatsBuilder(builder->subobjStart("catalogCache"));
 
@@ -581,6 +582,7 @@ void CatalogCache::report(BSONObjBuilder* builder) const {
     _stats.report(&cacheStatsBuilder);
 }
 
+//操作统计
 void CatalogCache::checkAndRecordOperationBlockedByRefresh(OperationContext* opCtx,
                                                            mongo::LogicalOp opType) {
     if (!isMongos() || !operationBlockedBehindCatalogCacheRefresh(opCtx)) {
@@ -911,6 +913,9 @@ CatalogCache::_createOrGetCollectionEntry(WithLock wl, const NamespaceString& ns
     return *itDb->second[nss.ns()];
 }
 
+
+//db.serverstatus().shardingStatistics
+//CatalogCache::report调用  
 void CatalogCache::Stats::report(BSONObjBuilder* builder) const {
     builder->append("countStaleConfigErrors", countStaleConfigErrors.load());
 

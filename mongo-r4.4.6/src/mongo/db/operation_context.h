@@ -268,6 +268,7 @@ public:
     /**
      * Returns true if operations should generate oplog entries.
      */
+    //分片或者副本集模式都返回true
     bool writesAreReplicated() const {
         return _writesAreReplicated;
     }
@@ -581,7 +582,7 @@ private:
 
     // Operations run within a transaction will hold a WriteUnitOfWork for the duration in order
     // to maintain two-phase locking.
-    //OperationContext::_recoveryUnit为RecoveryUnit类类型，对应WiredTigerRecoveryUnit类
+    //WriteUnitOfWork的相关接口最终都会调用RecoveryUnit接口,完成事务处理。两阶段事务提交相关
     std::unique_ptr<WriteUnitOfWork> _writeUnitOfWork;
 
     // Follows the values of ErrorCodes::Error. The default value is 0 (OK), which means the

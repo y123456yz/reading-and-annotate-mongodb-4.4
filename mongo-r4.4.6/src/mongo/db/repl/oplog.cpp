@@ -266,6 +266,7 @@ void createIndexForApplyOps(OperationContext* opCtx,
  * finalOpTime - the OpTime of the last oplog record.
  * wallTime - the wall clock time of the last oplog record.
  */
+//写oplog,logOp调用
 void _logOpsInner(OperationContext* opCtx,
                   const NamespaceString& nss,
                   std::vector<Record>* records,
@@ -321,6 +322,8 @@ void _logOpsInner(OperationContext* opCtx,
         });
 }
 
+//可以参考logOperation，logOperation调用
+//写oplog
 OpTime logOp(OperationContext* opCtx, MutableOplogEntry* oplogEntry) {
     // All collections should have UUIDs now, so all insert, update, and delete oplog entries should
     // also have uuids. Some no-op (n) and command (c) entries may still elide the uuid field.

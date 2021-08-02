@@ -118,6 +118,8 @@ RecoveryUnit::_txnClose封装了WT层的commit_transaction和rollback_transaction。
 //OperationContext::_recoveryUnit为RecoveryUnit类类型, WiredTigerRecoveryUnit继承该类
 //WiredTigerRecoveryUnit和biggie::RecoveryUnit继承该类
 
+//注意WriteUnitOfWork和RecoveryUnit的关系，WriteUnitOfWork的相关接口最终都会调用RecoveryUnit接口
+
 //StorageEngineImpl::newRecoveryUnit()中会构造新的recoveryUnit
 class RecoveryUnit {
     RecoveryUnit(const RecoveryUnit&) = delete;

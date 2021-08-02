@@ -444,7 +444,7 @@ private:
     CatalogCacheLoader& _cacheLoader;
 
     // Encapsulates runtime statistics across all collections in the catalog cache
-    struct Stats {
+    struct Stats { //db.serverstatus().shardingStatistics
         // Counts how many times threads hit stale config exception (which is what triggers metadata
         // refreshes)
         AtomicWord<long long> countStaleConfigErrors{0};
@@ -464,7 +464,7 @@ private:
         AtomicWord<long long> numActiveFullRefreshes{0};
 
         // Cumulative, always-increasing counter of how many full refreshes have been kicked off
-        AtomicWord<long long> countFullRefreshesStarted{0};
+        AtomicWord<long long> countFullRefreshesStarted{0}; 
 
         // Cumulative, always-increasing counter of how many full or incremental refreshes failed
         // for whatever reason
