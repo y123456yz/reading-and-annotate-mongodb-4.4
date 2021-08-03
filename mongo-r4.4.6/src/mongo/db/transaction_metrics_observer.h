@@ -60,6 +60,9 @@ namespace mongo {
 事务不提交的时候通过currentop获取   currentOp.transaction
 */
 
+//ObservableState.transactionMetricsObserver为该类型
+
+
 //ObservableState.transactionMetricsObserver成员为该类型
 //事务不提交的时候通过currentop获取
 

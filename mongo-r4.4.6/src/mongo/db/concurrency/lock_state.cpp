@@ -425,6 +425,7 @@ bool LockerImpl::unlockGlobal() {
     return true;
 }
 
+//LockerImpl::restoreWriteUnitOfWorkAndLock ºÍ WriteUnitOfWork::WriteUnitOfWorkµ÷ÓÃ
 void LockerImpl::beginWriteUnitOfWork() {
     _wuowNestingLevel++;
 }

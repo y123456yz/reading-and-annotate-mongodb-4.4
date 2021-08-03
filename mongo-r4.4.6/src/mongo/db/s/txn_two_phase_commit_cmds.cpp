@@ -227,7 +227,7 @@ public:
     class Invocation final : public InvocationBase {
     public:
         using InvocationBase::InvocationBase;
-
+		
         void typedRun(OperationContext* opCtx) {
             // Only config servers or initialized shard servers can act as transaction coordinators.
             if (serverGlobalParams.clusterRole != ClusterRole::ConfigServer) {

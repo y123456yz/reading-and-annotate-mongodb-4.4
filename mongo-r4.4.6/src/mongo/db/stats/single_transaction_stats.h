@@ -204,6 +204,7 @@ public:
     /**
      * Returns the LastClientInfo object stored in this SingleTransactionStats instance.
      */
+    //TransactionParticipant::Observer::reportStashedState÷– π”√
     const LastClientInfo& getLastClientInfo() const {
         return _lastClientInfo;
     }

@@ -92,11 +92,15 @@ class TransactionParticipant {
      * kPrepared, the transaction is not allowed to abort outside of an 'abortTransaction' command.
      * At this point, aborting the transaction must log an 'abortTransaction' oplog entry.
      */
+     //下面的ObservableState.txnState为该类型
     class TransactionState {
     public:
+        //TransactionState._state成员
         enum StateFlag {
             kNone = 1 << 0,
+            //_beginMultiDocumentTransaction中置为该状态
             kInProgress = 1 << 1,
+            //TransactionParticipant::Participant::prepareTransaction中置为该状态
             kPrepared = 1 << 2,
             //_finishCommitTransaction 事务已提交
             kCommitted = 1 << 3,
@@ -354,6 +358,7 @@ public:
      * Class used by a thread that has checked out the TransactionParticipant's session to observe
      * and modify the transaction participant.
      */
+     //一个操作上下文和Participant一一对应,参考TransactionParticipant::get
      //参与者
     class Participant : public Observer {
     public:
@@ -802,8 +807,10 @@ public:
         using Observer::o;
     };  // class Participant
 
-    //例如performInserts中会调用
+    //例如performInserts  CmdCommitTxn::run中会调用
+    //一次操作(包括事务提交)都对应一个opCtx，一个opCtx和一个Participant一一对应
     static Participant get(OperationContext* opCtx) {
+        //操作上下文和Participant一一对应
         return Participant(opCtx);
     }
 
@@ -885,7 +892,7 @@ private:
         boost::optional<TxnResources> txnResourceStash;
 
         // Maintains the transaction state and the transition table for legal state transitions.
-        TransactionState txnState;
+        TransactionState txnState; 
 
         // Tracks the last seen txn number for the session and is always >= to the transaction
         // number in the last written txn record. When it is > than that in the last written txn

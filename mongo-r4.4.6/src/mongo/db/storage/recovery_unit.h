@@ -77,7 +77,8 @@ enum class PrepareConflictBehavior {
 /**
  * Storage statistics management class, with interfaces to provide the statistics in the BSON format
  * and an operator to add the statistics values.
- */ //db.XXX.aggregate( [ { $collStats: { storageStats: { } } } ] )
+ */ 
+//WiredTigerOperationStatsºÃ≥–∏√¿‡
 class StorageStats {
     StorageStats(const StorageStats&) = delete;
     StorageStats& operator=(const StorageStats&) = delete;

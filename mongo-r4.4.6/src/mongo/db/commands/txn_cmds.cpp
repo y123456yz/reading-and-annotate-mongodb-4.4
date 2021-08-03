@@ -122,7 +122,7 @@ public:
         IDLParserErrorContext ctx("commitTransaction");
 		//解析出请求中的CommitTransaction信息
         auto cmd = CommitTransaction::parse(ctx, cmdObj);
-		//获取TransactionParticipant
+		//获取TransactionParticipant，操作上下文和Participant一一对应
         auto txnParticipant = TransactionParticipant::get(opCtx);
         uassert(ErrorCodes::CommandFailed,
                 "commitTransaction must be run within a transaction",
@@ -193,7 +193,6 @@ static const Status kOnlyTransactionsReadConcernsSupported{
     ErrorCodes::InvalidOptions, "only read concerns valid in transactions are supported"};
 static const Status kDefaultReadConcernNotPermitted{ErrorCodes::InvalidOptions,
                                                     "default read concern not permitted"};
-
 class CmdAbortTxn : public BasicCommand {
 public:
     CmdAbortTxn() : BasicCommand("abortTransaction") {}

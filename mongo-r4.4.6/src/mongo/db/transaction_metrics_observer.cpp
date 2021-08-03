@@ -186,6 +186,7 @@ void TransactionMetricsObserver::onTransactionOperation(OperationContext* opCtx,
     // SingleTransactionStats instance either by creating a new storageStats instance or by adding
     // into an existing storageStats instance stored in SingleTransactionStats.
     // WiredTiger doesn't let storage statistics be collected when transaction is prepared.
+    //慢日志中的"storage":{"data":{"bytesRead":3679,"timeReadingMicros":58}}
     if (!isPrepared) {
         std::shared_ptr<StorageStats> storageStats =
             opCtx->recoveryUnit()->getOperationStatistics();

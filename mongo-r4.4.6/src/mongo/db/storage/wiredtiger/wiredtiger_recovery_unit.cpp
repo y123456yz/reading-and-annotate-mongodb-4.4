@@ -76,7 +76,8 @@ std::shared_ptr<StorageStats> WiredTigerOperationStats::getCopy() {
     return copy;
 }
 
-//WiredTigerRecoveryUnit::getOperationStatistics()
+//WiredTigerRecoveryUnit::getOperationStatistics() 
+//获取存储引擎统计信息
 void WiredTigerOperationStats::fetchStats(WT_SESSION* session,
                                           const std::string& uri,
                                           const std::string& config) {
@@ -102,11 +103,14 @@ void WiredTigerOperationStats::fetchStats(WT_SESSION* session,
     invariantWTOK(c->reset(c));
 }
 
+//这个是慢日志打印相关的信息
+//慢日志中的"storage":{"data":{"bytesRead":3679,"timeReadingMicros":58}}
 BSONObj WiredTigerOperationStats::toBSON() {
     BSONObjBuilder bob;
     std::unique_ptr<BSONObjBuilder> dataSection;
     std::unique_ptr<BSONObjBuilder> waitSection;
 
+	//_stats来源上面的WiredTigerOperationStats::fetchStats
     for (auto const& stat : _stats) {
         // Find the user consumable name for this statistic.
         auto statIt = _statNameMap.find(stat.first);
@@ -219,6 +223,7 @@ void WiredTigerRecoveryUnit::beginUnitOfWork(OperationContext* opCtx) {
     _setState(_isActive() ? State::kActive : State::kInactiveInUnitOfWork);
 }
 
+//WriteUnitOfWork::prepare()
 void WiredTigerRecoveryUnit::prepareUnitOfWork() {
     invariant(_inUnitOfWork(), toString(_getState()));
     invariant(!_prepareTimestamp.isNull());
@@ -904,7 +909,6 @@ void WiredTigerRecoveryUnit::beginIdle() {
 }
 
 ////CurOp::completeAndLogOperation   TransactionMetricsObserver::onTransactionOperation
-//慢日志中的"storage":{"data":{"bytesRead":3679,"timeReadingMicros":58}}等
 std::shared_ptr<StorageStats> WiredTigerRecoveryUnit::getOperationStatistics() const {
     std::shared_ptr<WiredTigerOperationStats> statsPtr(nullptr);
 

@@ -487,6 +487,7 @@ void TransactionParticipant::Participant::_beginMultiDocumentTransaction(Operati
     invariant(p().transactionOperations.empty());
 }
 
+//CoordinateCommitTransactionCmd::typedRun
 void TransactionParticipant::Participant::beginOrContinue(OperationContext* opCtx,
                                                           TxnNumber txnNumber,
                                                           boost::optional<bool> autocommit,
@@ -1333,6 +1334,7 @@ void TransactionParticipant::Participant::commitUnpreparedTransaction(OperationC
 
     // _commitStorageTransaction can throw, but it is safe for the exception to be bubbled up to
     // the caller, since the transaction can still be safely aborted at this point.
+    //通知存储引擎进行真正的事务提交
     _commitStorageTransaction(opCtx);
 
     _finishCommitTransaction(opCtx, operationCount, oplogOperationBytes);
@@ -1484,6 +1486,7 @@ void TransactionParticipant::Participant::_commitStorageTransaction(OperationCon
     // writes.
     opCtx->setRecoveryUnit(std::unique_ptr<RecoveryUnit>(
     							//WiredTigerKVEngine::newRecoveryUnit()默认引擎用这个
+    							//获取新的WiredTigerRecoveryUnit
                                opCtx->getServiceContext()->getStorageEngine()->newRecoveryUnit()),
                            WriteUnitOfWork::RecoveryUnitState::kNotInUnitOfWork);
 
@@ -1501,7 +1504,7 @@ void TransactionParticipant::Participant::_finishCommitTransaction(
 
 		//下面两个实现事务统计相关
 		
-		//TransactionMetricsObserver::onCommit
+		//TransactionMetricsObserver::onCommit  
         o(lk).transactionMetricsObserver.onCommit(opCtx,
                                                   ServerTransactionsMetrics::get(opCtx),
                                                   tickSource,
@@ -1529,16 +1532,19 @@ bool TransactionParticipant::Observer::expiredAsOf(Date_t when) const {
         o().transactionExpireDate < when;
 }
 
+//CmdAbortTxn::run调用
 void TransactionParticipant::Participant::abortTransaction(OperationContext* opCtx) {
     // Normally, absence of a transaction resource stash indicates an inactive transaction.
     // However, in the case of a failed "unstash", an active transaction may exist without a stash
     // and be killed externally.  In that case, the opCtx will not have a transaction number.
     if (o().txnResourceStash || !opCtx->getTxnNumber()) {
         // Aborting an inactive transaction.
+        //sessi上的第一个事务操作就abort了
         _abortTransactionOnSession(opCtx);
     } else if (o().txnState.isPrepared()) {
         _abortActivePreparedTransaction(opCtx);
     } else {
+    	//不是第一个事务操作
         _abortActiveTransaction(opCtx, TransactionState::kInProgress);
     }
 }
@@ -1567,7 +1573,7 @@ void TransactionParticipant::Participant::_abortActivePreparedTransaction(Operat
 
 
 
-
+//Participant::abortTransaction    _abortActivePreparedTransaction
 void TransactionParticipant::Participant::_abortActiveTransaction(
     OperationContext* opCtx, TransactionState::StateSet expectedStates) {
     invariant(!o().txnResourceStash);
@@ -1660,6 +1666,7 @@ void TransactionParticipant::Participant::_finishAbortingActiveTransaction(
     }
 }
 
+//Participant::abortTransaction
 void TransactionParticipant::Participant::_abortTransactionOnSession(OperationContext* opCtx) {
     const auto tickSource = opCtx->getServiceContext()->getTickSource();
 
@@ -1690,7 +1697,7 @@ void TransactionParticipant::Participant::_abortTransactionOnSession(OperationCo
 
 
 
-
+//事务日志记录，重新生成新WiredTigerRecoveryUnit
 void TransactionParticipant::Participant::_cleanUpTxnResourceOnOpCtx(
     OperationContext* opCtx, TerminationCause terminationCause) {
     // Log the transaction if its duration is longer than the slowMS command threshold.
@@ -1831,6 +1838,7 @@ BSONObj TransactionParticipant::Observer::reportStashedState(OperationContext* o
     return builder.obj();
 }
 
+//事务操作相关的currentOp打印
 void TransactionParticipant::Observer::reportStashedState(OperationContext* opCtx,
                                                           BSONObjBuilder* builder) const {
     if (o().txnResourceStash && o().txnResourceStash->locker()) {
@@ -1992,12 +2000,33 @@ void TransactionParticipant::TransactionState::transitionTo(StateFlag newState,
     }
 }
 
+/*
+"transaction" : {
+		"parameters" : {
+				"txnNumber" : NumberLong(1),
+				"autocommit" : false,
+				"readConcern" : {
+						"level" : "snapshot",
+						"afterClusterTime" : Timestamp(1627636326, 1)
+				}
+		},
+		"readTimestamp" : Timestamp(0, 0),
+		"startWallClockTime" : "2021-07-30T17:12:32.910+0800",
+		"timeOpenMicros" : NumberLong(2106390),
+		"timeActiveMicros" : NumberLong(94),
+		"timeInactiveMicros" : NumberLong(2106296),
+		"expiryTime" : "2021-07-30T17:13:32.910+0800"
+},
+事务不提交的时候通过currentop获取
+*/
+//db.currentOp中的transaction统计
 
 //TransactionParticipant::Observer::reportUnstashedState
 //TransactionParticipant::Observer::reportStashedState
 void TransactionParticipant::Observer::_reportTransactionStats(
     OperationContext* opCtx, BSONObjBuilder* builder, repl::ReadConcernArgs readConcernArgs) const {
     const auto tickSource = opCtx->getServiceContext()->getTickSource();
+	//SingleTransactionStats::report
     o().transactionMetricsObserver.getSingleTransactionStats().report(
         builder, readConcernArgs, tickSource, tickSource->getTicks());
 }

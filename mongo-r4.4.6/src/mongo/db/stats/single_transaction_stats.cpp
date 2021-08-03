@@ -131,9 +131,8 @@ void SingleTransactionStats::setInactive(TickSource* tickSource, TickSource::Tic
 },
 事务不提交的时候通过currentop获取
 */
-
+//db.currentOp中的transaction统计
 //TransactionParticipant::Observer::_reportTransactionStats
-
 void SingleTransactionStats::report(BSONObjBuilder* builder,
                                     const repl::ReadConcernArgs& readConcernArgs,
                                     TickSource* tickSource,

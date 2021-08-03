@@ -53,6 +53,9 @@ using RoundUpReadTimestamp = WiredTigerBeginTxnBlock::RoundUpReadTimestamp;
 
 class BSONObjBuilder;
 
+
+//慢日志中的"storage":{"data":{"bytesRead":3679,"timeReadingMicros":58}}就是从存储引擎获取的
+//表示指定操作在存储引擎层面的统计数据
 class WiredTigerOperationStats final : public StorageStats {
 public:
     /**
