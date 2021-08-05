@@ -408,6 +408,7 @@ void OperationContext::releaseOperationKey() {
     _opKey = boost::none;
 }
 
+//initializeOperationSessionInfo
 void OperationContext::setTxnNumber(TxnNumber txnNumber) {
     invariant(_lsid);
     _txnNumber = txnNumber;

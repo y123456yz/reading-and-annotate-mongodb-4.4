@@ -38,6 +38,8 @@
 
 namespace mongo {
 
+//
+//execCommandDatabase  runCommandµ÷ÓÃ
 OperationSessionInfoFromClient initializeOperationSessionInfo(OperationContext* opCtx,
                                                               const BSONObj& requestBody,
                                                               bool requiresAuth,

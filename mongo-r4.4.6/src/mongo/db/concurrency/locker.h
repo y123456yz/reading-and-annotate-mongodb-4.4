@@ -108,6 +108,7 @@ public:
     /**
      * Indicate that shared locks should participate in two-phase locking for this Locker instance.
      */
+     //execCommandDatabase
     virtual void setSharedLocksShouldTwoPhaseLock(bool sharedLocksShouldTwoPhaseLock) = 0;
 
     /**
@@ -471,6 +472,7 @@ public:
      * of data because within a batch, secondaries apply operations in a different order than on the
      * primary. User operations should *never* opt out.
      */
+     //execCommandDatabase
     void setShouldConflictWithSecondaryBatchApplication(bool newValue) {
         _shouldConflictWithSecondaryBatchApplication = newValue;
     }

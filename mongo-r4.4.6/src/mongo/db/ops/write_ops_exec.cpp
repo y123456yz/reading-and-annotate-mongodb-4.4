@@ -329,6 +329,7 @@ void insertDocuments(OperationContext* opCtx,
     auto batchSize = std::distance(begin, end);
     if (supportsDocLocking()) {
         auto replCoord = repl::ReplicationCoordinator::get(opCtx);
+		//autocommit=true才会满足条件  
         auto inTransaction = opCtx->inMultiDocumentTransaction();
 
         if (!inTransaction && !replCoord->isOplogDisabledFor(opCtx, collection->ns())) {
@@ -354,7 +355,9 @@ void insertDocuments(OperationContext* opCtx,
         });
 
     uassertStatusOK(
+		//CollectionImpl::insertDocuments   
         collection->insertDocuments(opCtx, begin, end, &CurOp::get(opCtx)->debug(), fromMigrate));
+	//WriteUnitOfWork::commit
     wuow.commit();
 }
 
@@ -434,7 +437,9 @@ bool insertBatchAndHandleErrors(OperationContext* opCtx,
             &hangWithLockDuringBatchInsert, opCtx, "hangWithLockDuringBatchInsert");
     };
 
+	//说明处于事务状态中
     auto txnParticipant = TransactionParticipant::get(opCtx);
+	//处于事务状态，并且携带有autocommit=true
     auto inTxn = txnParticipant && opCtx->inMultiDocumentTransaction();
     bool shouldProceedWithBatchInsert = true;
 
@@ -455,8 +460,10 @@ bool insertBatchAndHandleErrors(OperationContext* opCtx,
         shouldProceedWithBatchInsert = false;
     }
 
+	//批量写，多条数据一个事务中再这里面封装
     if (shouldProceedWithBatchInsert) {
         try {
+			//多条数据一个事务中
             if (!collection->getCollection()->isCapped() && !inTxn && batch.size() > 1) {
                 // First try doing it all together. If all goes well, this is all we need to do.
                 // See Collection::_insertDocuments for why we do all capped inserts one-at-a-time.

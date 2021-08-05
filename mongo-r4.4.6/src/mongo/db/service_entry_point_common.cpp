@@ -918,6 +918,9 @@ bool runCommandImpl(OperationContext* opCtx,
  * replication state. All the logic here is independent of any particular command; any
  * functionality relevant to a specific command should be confined to its run() method.
  */
+//mongos流程ServiceEntryPointMongos::handleRequest->Strategy::clientCommand->runCommand
+//mongod流程:ServiceEntryPointMongod::handleRequest->runCommands->execCommandDatabase调用
+
 void execCommandDatabase(OperationContext* opCtx,
                          Command* command,
                          const OpMsgRequest& request,

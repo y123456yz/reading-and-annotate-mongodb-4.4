@@ -408,6 +408,7 @@ public:
      * Sets that this operation is part of a multi-document transaction. Once this is set, it cannot
      * be unset.
      */
+    //initializeOperationSessionInfo中赋值  autocommit=true才会满足条件
     void setInMultiDocumentTransaction() {
         _inMultiDocumentTransaction = true;
     }
@@ -444,6 +445,7 @@ public:
     /**
      * Returns whether this operation is starting a multi-document transaction.
      */
+    //parseCmdObjectToQueryRequest  applyReadWriteConcern
     bool isStartingMultiDocumentTransaction() const {
         return _isStartingMultiDocumentTransaction;
     }
@@ -451,6 +453,7 @@ public:
     /**
      * Sets whether this operation is starting a multi-document transaction.
      */
+    //execCommandDatabase
     void setIsStartingMultiDocumentTransaction(bool isStartingMultiDocumentTransaction) {
         _isStartingMultiDocumentTransaction = isStartingMultiDocumentTransaction;
     }

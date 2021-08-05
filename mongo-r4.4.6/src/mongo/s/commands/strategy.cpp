@@ -351,7 +351,7 @@ MONGO_FAIL_POINT_DEFINE(doNotRefreshShardsOnRetargettingError);
 /**
  * Executes the command for the given request, and appends the result to replyBuilder
  * and error labels, if any, to errorBuilder.
- */
+ */ 
 void runCommand(OperationContext* opCtx,
                 const OpMsgRequest& request,
                 const Message& m,
