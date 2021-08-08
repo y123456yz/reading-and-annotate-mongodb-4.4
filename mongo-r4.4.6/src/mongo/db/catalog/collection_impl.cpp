@@ -511,6 +511,7 @@ Status CollectionImpl::insertDocuments(OperationContext* opCtx,
     getGlobalServiceContext()->getOpObserver()->onInserts(
         opCtx, ns(), uuid(), begin, end, fromMigrate);
 
+	//RecoveryUnit::onCommit  ×¢²á¶ÔÓ¦change
     opCtx->recoveryUnit()->onCommit(
         [this](boost::optional<Timestamp>) { notifyCappedWaitersIfNeeded(); });
 

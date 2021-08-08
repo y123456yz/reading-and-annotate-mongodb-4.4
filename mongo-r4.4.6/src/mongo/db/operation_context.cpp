@@ -418,6 +418,8 @@ std::unique_ptr<RecoveryUnit> OperationContext::releaseRecoveryUnit() {
     return std::move(_recoveryUnit);
 }
 
+//onCreateOperationContext   
+//生成新的unit和state赋值给OperationContext相关成员
 WriteUnitOfWork::RecoveryUnitState OperationContext::setRecoveryUnit(
     std::unique_ptr<RecoveryUnit> unit, WriteUnitOfWork::RecoveryUnitState state) {
     _recoveryUnit = std::move(unit);

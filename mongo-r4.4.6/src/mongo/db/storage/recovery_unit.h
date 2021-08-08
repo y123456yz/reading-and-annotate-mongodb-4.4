@@ -120,6 +120,8 @@ RecoveryUnit::_txnClose封装了WT层的commit_transaction和rollback_transaction。
 //WiredTigerRecoveryUnit和biggie::RecoveryUnit继承该类
 
 //注意WriteUnitOfWork和RecoveryUnit的关系，WriteUnitOfWork的相关接口最终都会调用RecoveryUnit接口
+//OperationContext._recoveryUnit  OperationContext._writeUnitOfWork分别对应RecoveryUnit和WriteUnitOfWork
+
 
 //StorageEngineImpl::newRecoveryUnit()中会构造新的recoveryUnit
 class RecoveryUnit {
@@ -554,6 +556,7 @@ public:
      * Be careful about the lifetimes of all variables captured by the callback!
      */
     template <typename Callback>
+    //CollectionImpl::insertDocuments中会调用
     void onCommit(Callback callback) {
         class OnCommitChange final : public Change {
         public:

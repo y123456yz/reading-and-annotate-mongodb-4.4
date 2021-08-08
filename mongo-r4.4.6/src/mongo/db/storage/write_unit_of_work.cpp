@@ -49,7 +49,12 @@ WriteUnitOfWork::WriteUnitOfWork(OperationContext* opCtx)
             "Cannot execute a write operation in read-only mode",
             !storageGlobalParams.readOnly);
     _opCtx->lockState()->beginWriteUnitOfWork();
+	    LOGV2_DEBUG(22414,
+                3,
+                "yang test",
+                " WriteUnitOfWork::WriteUnitOfWork ";
     if (_toplevel) {
+		//WiredTigerRecoveryUnit::beginUnitOfWork
         _opCtx->recoveryUnit()->beginUnitOfWork(_opCtx);
         _opCtx->_ruState = RecoveryUnitState::kActiveUnitOfWork;
     }
@@ -63,11 +68,13 @@ WriteUnitOfWork::~WriteUnitOfWork() {
     if (!_released && !_committed) {
         invariant(_opCtx->_ruState != RecoveryUnitState::kNotInUnitOfWork);
         if (_toplevel) {
+			//WiredTigerRecoveryUnit::abortUnitOfWork
             _opCtx->recoveryUnit()->abortUnitOfWork();
             _opCtx->_ruState = RecoveryUnitState::kNotInUnitOfWork;
         } else {
             _opCtx->_ruState = RecoveryUnitState::kFailedUnitOfWork;
         }
+		//LockerImpl::endWriteUnitOfWork()
         _opCtx->lockState()->endWriteUnitOfWork();
     }
 }
@@ -99,11 +106,12 @@ void WriteUnitOfWork::prepare() {
     invariant(_toplevel);
     invariant(_opCtx->_ruState == RecoveryUnitState::kActiveUnitOfWork);
 
+	//WiredTigerRecoveryUnit::prepareUnitOfWork()
     _opCtx->recoveryUnit()->prepareUnitOfWork();
     _prepared = true;
 }
 
-//TransactionParticipant::Participant::_commitStorageTransaction
+//TransactionParticipant::Participant::_commitStorageTransaction  mongo::insertDocuments等
 //引擎层事务提交
 void WriteUnitOfWork::commit() {
     invariant(!_committed);
@@ -114,9 +122,10 @@ void WriteUnitOfWork::commit() {
             sleepFor(Milliseconds(100));
         }
 
+		//RecoveryUnit::runPreCommitHooks()
         _opCtx->recoveryUnit()->runPreCommitHooks(_opCtx);
 
-		//RecoveryUnit::commitUnitOfWork
+		//WiredTigerRecoveryUnit::commitUnitOfWork
         _opCtx->recoveryUnit()->commitUnitOfWork();
         _opCtx->_ruState = RecoveryUnitState::kNotInUnitOfWork;
     }

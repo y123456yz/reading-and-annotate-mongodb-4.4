@@ -74,6 +74,7 @@ class UnreplicatedWritesBlock;
  * (RecoveryUnitState) to reduce complexity and duplication in the storage-engine specific
  * RecoveryUnit and to allow better invariant checking.
  */
+
 class OperationContext : public Interruptible, public Decorable<OperationContext> {
     OperationContext(const OperationContext&) = delete;
     OperationContext& operator=(const OperationContext&) = delete;
@@ -98,6 +99,7 @@ public:
     /**
      * Interface for durability.  Caller DOES NOT own pointer.
      */
+    //_opCtx->recoveryUnit()方式获取，可以参考WriteUnitOfWork::commit()
     RecoveryUnit* recoveryUnit() const {
         return _recoveryUnit.get();
     }

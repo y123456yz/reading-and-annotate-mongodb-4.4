@@ -54,12 +54,14 @@ void RecoveryUnit::assignNextSnapshotId() {
     _mySnapshotId = nextSnapshotId.fetchAndAdd(1);
 }
 
+//UncommittedCollections::addToTxn中注册
 void RecoveryUnit::registerPreCommitHook(std::function<void(OperationContext*)> callback) {
     _preCommitHooks.push_back(std::move(callback));
 }
 
 void RecoveryUnit::runPreCommitHooks(OperationContext* opCtx) {
     ON_BLOCK_EXIT([&] { _preCommitHooks.clear(); });
+	//参考RecoveryUnit::registerPreCommitHook
     for (auto& hook : _preCommitHooks) {
         hook(opCtx);
     }
@@ -70,6 +72,7 @@ void RecoveryUnit::registerChange(std::unique_ptr<Change> change) {
     _changes.push_back(std::move(change));
 }
 
+//WiredTigerRecoveryUnit::_commit()
 void RecoveryUnit::commitRegisteredChanges(boost::optional<Timestamp> commitTimestamp) {
     // Getting to this method implies `runPreCommitHooks` completed successfully, resulting in
     // having its contents cleared.
@@ -77,13 +80,14 @@ void RecoveryUnit::commitRegisteredChanges(boost::optional<Timestamp> commitTime
     if (MONGO_unlikely(widenWUOWChangesWindow.shouldFail())) {
         sleepmillis(1000);
     }
-    for (auto& change : _changes) {
+    for (auto& change : _changes) {//changes在上面的RecoveryUnit::registerChange注册
         try {
             // Log at higher level because commits occur far more frequently than rollbacks.
             LOGV2_DEBUG(22244,
                         3,
                         "CUSTOM COMMIT {demangleName_typeid_change}",
                         "demangleName_typeid_change"_attr = redact(demangleName(typeid(*change))));
+			//例如WiredTigerRecordStore::_increaseDataSize中注册，对应commit为WiredTigerRecordStore::DataSizeChange::commit
             change->commit(commitTimestamp);
         } catch (...) {
             std::terminate();

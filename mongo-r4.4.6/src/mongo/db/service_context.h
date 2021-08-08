@@ -605,6 +605,7 @@ private:
         void onDestroy(Client* client) const {
             _observer->onDestroyClient(client);
         }
+        //ClientObserverHolder::onCreate
         void onCreate(OperationContext* opCtx) const {
             _observer->onCreateOperationContext(opCtx);
         }

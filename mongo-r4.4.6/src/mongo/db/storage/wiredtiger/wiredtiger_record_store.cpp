@@ -1998,6 +1998,7 @@ void WiredTigerRecordStore::_changeNumRecords(OperationContext* opCtx, int64_t d
         _sizeInfo->numRecords.store(std::max(diff, int64_t(0)));
 }
 
+
 class WiredTigerRecordStore::DataSizeChange : public RecoveryUnit::Change {
 public:
     DataSizeChange(WiredTigerRecordStore* rs, int64_t amount) : _rs(rs), _amount(amount) {}

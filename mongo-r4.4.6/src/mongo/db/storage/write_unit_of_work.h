@@ -64,6 +64,8 @@ RecoveryUnit::_txnClose封装了WT层的commit_transaction和rollback_transaction。
 //WiredTigerRecoveryUnit继承该类
 
 //注意WriteUnitOfWork和RecoveryUnit的关系，WriteUnitOfWork的相关接口最终都会调用RecoveryUnit接口
+//OperationContext._recoveryUnit  OperationContext._writeUnitOfWork分别对应RecoveryUnit和WriteUnitOfWork
+
 
 //使用可以参考insertDocuments  makeCollection    事务封装
 //OperationContext._writeUnitOfWork为该类型，表示该操作对应的事务相关封装

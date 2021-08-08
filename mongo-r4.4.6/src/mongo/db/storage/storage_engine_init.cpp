@@ -316,6 +316,7 @@ class StorageClientObserver final : public ServiceContext::ClientObserver {
 public:
     void onCreateClient(Client* client) override{};
     void onDestroyClient(Client* client) override{};
+	//ClientObserverHolder::onCreate
     void onCreateOperationContext(OperationContext* opCtx) {
         auto service = opCtx->getServiceContext();
         auto storageEngine = service->getStorageEngine();

@@ -430,6 +430,7 @@ void LockerImpl::beginWriteUnitOfWork() {
     _wuowNestingLevel++;
 }
 
+//WriteUnitOfWork::~WriteUnitOfWork()
 void LockerImpl::endWriteUnitOfWork() {
     invariant(_wuowNestingLevel > 0);
 

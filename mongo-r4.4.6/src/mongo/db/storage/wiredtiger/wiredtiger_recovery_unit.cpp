@@ -214,6 +214,7 @@ void WiredTigerRecoveryUnit::_abort() {
     _setState(State::kInactive);
 }
 
+//WriteUnitOfWork::WriteUnitOfWork
 void WiredTigerRecoveryUnit::beginUnitOfWork(OperationContext* opCtx) {
     invariant(!_inUnitOfWork(), toString(_getState()));
     invariant(!_isCommittingOrAborting(),
@@ -539,6 +540,7 @@ boost::optional<Timestamp> WiredTigerRecoveryUnit::getPointInTimeReadTimestamp()
     MONGO_UNREACHABLE;
 }
 
+//WiredTigerRecoveryUnit::getSession()
 void WiredTigerRecoveryUnit::_txnOpen() {
     invariant(!_isActive(), toString(_getState()));
     invariant(!_isCommittingOrAborting(),
