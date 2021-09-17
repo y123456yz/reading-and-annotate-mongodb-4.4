@@ -360,7 +360,7 @@ void insertDocuments(OperationContext* opCtx,
 		//CollectionImpl::insertDocuments   
         collection->insertDocuments(opCtx, begin, end, &CurOp::get(opCtx)->debug(), fromMigrate));
 	//WriteUnitOfWork::commit
-    wuow.commit();
+    wuow.commit(); 
 }
 
 /**

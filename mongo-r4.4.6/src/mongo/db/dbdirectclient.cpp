@@ -52,6 +52,7 @@ using std::unique_ptr;
 
 namespace {
 
+//进程内部模拟的client
 class DirectClientScope {
     DirectClientScope(const DirectClientScope&) = delete;
     DirectClientScope& operator=(const DirectClientScope&) = delete;

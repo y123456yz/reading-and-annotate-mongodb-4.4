@@ -549,6 +549,9 @@ void _abortUnpreparedOrStashPreparedTransaction(
 }
 }  // namespace
 
+//{"type":"command","ns":"mydb1.foo","appName":"MongoDB Shell","command":{"insert":"foo","ordered":true,"lsid":{"id":{"$uuid":"aa6e8c5b-0284-4a97-9b66-eef9bc89c6e3"}},"$clusterTime":{"clusterTime":{"$timestamp":{"t":1631885593,"i":1}},"signature":{"hash":{"$binary":{"base64":"AAAAAAAAAAAAAAAAAAAAAAAAAAA=","subType":"0"}},"keyId":0}},
+//  "txnNumber":0,"autocommit":false,"stmtId":0,"startTransaction":true,"readConcern":{"level":"local"},"$db":"mydb1"},"ninserted":1,"keysInserted":1,"numYields":0,"reslen":230,"locks":{},"readConcern":{"level":"local"},"storage":{},"protocol":"op_msg","durationMillis":0}
+//runCommandImpl   session.startTransaction()命令后，写入数据的时候会走到这里，startTransaction命令在数据操作的时候一同带上
 void invokeWithSessionCheckedOut(OperationContext* opCtx,
                                  const OpMsgRequest& request,
                                  CommandInvocation* invocation,
@@ -1379,7 +1382,7 @@ DbResponse receivedCommands(OperationContext* opCtx,
 
             LOGV2_DEBUG(21965,
                         2,
-                        "Run command {db}.$cmd {commandArgs}",
+                        //"Run command {db}.$cmd {commandArgs}",
                         "About to run the command",
                         "db"_attr = request.getDatabase(),
                         "commandArgs"_attr = redact(
@@ -1820,6 +1823,7 @@ DbResponse ServiceEntryPointCommon::handleRequest(OperationContext* opCtx,
         if (opCtx->lockState()->isReadLocked()) {
             LOGV2_DEBUG(21970, 1, "Note: not profiling because of recursive read lock");
         } else if (c.isInDirectClient()) {
+        	//进程内部模拟的client
             LOGV2_DEBUG(21971, 1, "Note: not profiling because we are in DBDirectClient");
         } else if (behaviors.lockedForWriting()) {
             // TODO SERVER-26825: Fix race condition where fsyncLock is acquired post

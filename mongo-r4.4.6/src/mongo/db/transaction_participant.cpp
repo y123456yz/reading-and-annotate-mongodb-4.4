@@ -413,6 +413,7 @@ const LogicalSessionId& TransactionParticipant::Observer::_sessionId() const {
     return owningSession->getSessionId();
 }
 
+//TransactionParticipant::Participant::beginOrContinue
 void TransactionParticipant::Participant::_beginOrContinueRetryableWrite(OperationContext* opCtx,
                                                                          TxnNumber txnNumber) {
     if (txnNumber > o().activeTxnNumber) {
@@ -488,7 +489,8 @@ void TransactionParticipant::Participant::_beginMultiDocumentTransaction(Operati
     invariant(p().transactionOperations.empty());
 }
 
-//CoordinateCommitTransactionCmd::typedRun
+//CoordinateCommitTransactionCmd::typedRun  
+//runCommandImpl->invokeWithSessionCheckedOut  session.startTransaction()后的多文档操作会走该流程
 void TransactionParticipant::Participant::beginOrContinue(OperationContext* opCtx,
                                                           TxnNumber txnNumber,
                                                           boost::optional<bool> autocommit,
@@ -535,6 +537,8 @@ void TransactionParticipant::Participant::beginOrContinue(OperationContext* opCt
 
     // Requests without an autocommit field are interpreted as retryable writes. They cannot specify
     // startTransaction, which is verified earlier when parsing the request.
+
+	//默认autocommit=false，应该走该流程
     if (!autocommit) {
         invariant(!startTransaction);
         _beginOrContinueRetryableWrite(opCtx, txnNumber);

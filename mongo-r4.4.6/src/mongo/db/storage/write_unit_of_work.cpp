@@ -87,6 +87,7 @@ std::unique_ptr<WriteUnitOfWork> WriteUnitOfWork::createForSnapshotResume(
     return wuow;
 }
 
+
 WriteUnitOfWork::RecoveryUnitState WriteUnitOfWork::release() {
     auto ruState = _opCtx->_ruState;
     invariant(ruState == RecoveryUnitState::kActiveUnitOfWork ||
@@ -99,6 +100,7 @@ WriteUnitOfWork::RecoveryUnitState WriteUnitOfWork::release() {
     return ruState;
 }
 
+//_applyTransactionFromOplogChainµ÷ÓÃ
 void WriteUnitOfWork::prepare() {
     invariant(!_committed);
     invariant(!_prepared);

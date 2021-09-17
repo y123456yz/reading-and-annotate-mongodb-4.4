@@ -296,6 +296,7 @@ private:
     SpinLock _lock;
 
     // Whether this client is running as DBDirectClient
+    //进程内部模拟的client
     bool _inDirectClient = false;
 
     // If != NULL, then contains the currently active OperationContext
