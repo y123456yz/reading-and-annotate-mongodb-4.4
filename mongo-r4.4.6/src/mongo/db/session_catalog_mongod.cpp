@@ -128,6 +128,8 @@ const auto kLastWriteDateFieldName = SessionTxnRecord::kLastWriteDateFieldName;
  * Removes the specified set of session ids from the persistent sessions collection and returns the
  * number of sessions actually removed.
  */
+//MongoDSessionCatalog::reapSessionsOlderThan
+//从config.transactions表中删除指定的session对应的事务数据
 int removeSessionsTransactionRecords(OperationContext* opCtx,
                                      SessionsCollection& sessionsCollection,
                                      const LogicalSessionIdSet& sessionIdsToRemove) {
@@ -338,6 +340,11 @@ void MongoDSessionCatalog::invalidateAllSessions(OperationContext* opCtx) {
     killSessionTokens(opCtx, std::move(sessionKillTokens));
 }
 
+//mongod对应MongoDSessionCatalog::reapSessionsOlderThan
+//mongos对应RouterSessionCatalog::reapSessionsOlderThan
+
+////从transaction表中找出事务信息，把session已经过期的transaction删除，把session已经过期的transaction标记出来
+//LogicalSessionCacheImpl::_reap
 int MongoDSessionCatalog::reapSessionsOlderThan(OperationContext* opCtx,
                                                 SessionsCollection& sessionsCollection,
                                                 Date_t possiblyExpired) {
@@ -346,6 +353,7 @@ int MongoDSessionCatalog::reapSessionsOlderThan(OperationContext* opCtx,
 
         // Capture the possbily expired in-memory session ids
         LogicalSessionIdSet lsids;
+		//SessionCatalog::scanSessions
         catalog->scanSessions(SessionKiller::Matcher(
                                   KillAllSessionsByPatternSet{makeKillAllSessionsByPattern(opCtx)}),
                               [&](const ObservableSession& session) {
@@ -355,9 +363,11 @@ int MongoDSessionCatalog::reapSessionsOlderThan(OperationContext* opCtx,
                               });
 
         // From the passed-in sessions, find the ones which are actually expired/removed
+        //把过期的空闲session找出来
         auto expiredSessionIds = sessionsCollection.findRemovedSessions(opCtx, lsids);
 
         // Remove the session ids from the in-memory catalog
+        //把空闲过期session和对应的transaction事务关联
         for (const auto& lsid : expiredSessionIds) {
             catalog->scanSession(lsid, [](ObservableSession& session) {
                 const auto participant = TransactionParticipant::get(session);
@@ -376,6 +386,15 @@ int MongoDSessionCatalog::reapSessionsOlderThan(OperationContext* opCtx,
     if (!replCoord->canAcceptWritesForDatabase_UNSAFE(opCtx, NamespaceString::kConfigDb))
         return 0;
 
+	/*
+	test_auth_repl_4.4.6:PRIMARY> db.aggregate( [  { $listLocalSessions: { allUsers: true } } ] )
+	{ "_id" : { "id" : UUID("88e8670b-a4c6-4a35-9a2b-c4e6b62926c0"), "uid" : BinData(0,"Y5mrDaxi8gv8RmdTsQ+1j7fmkr7JUsabhNmXAheU0fg=") }, "lastUse" : ISODate("2021-08-18T07:46:29.423Z"), "user" : "root@admin" }
+	test_auth_repl_4.4.6:PRIMARY> db.transactions.find()
+	{ "_id" : { "id" : UUID("88e8670b-a4c6-4a35-9a2b-c4e6b62926c0"), "uid" : BinData(0,"Y5mrDaxi8gv8RmdTsQ+1j7fmkr7JUsabhNmXAheU0fg=") }, "txnNum" : NumberLong(0), "lastWriteOpTime" : { "ts" : Timestamp(1629272789, 1), "t" : NumberLong(12) }, "lastWriteDate" : ISODate("2021-08-18T07:46:29.423Z"), "state" : "committed" }
+	sessions和transactions的_id是一样的，事务在指定的session中实现的
+	*/
+	//从transaction表中找出事务信息，把session已经过期的transaction删除
+	
     // Scan for records older than the minimum lifetime and uses a sort to walk the '_id' index
     DBDirectClient client(opCtx);
     auto cursor =
@@ -387,7 +406,7 @@ int MongoDSessionCatalog::reapSessionsOlderThan(OperationContext* opCtx,
 
     // The max batch size is chosen so that a single batch won't exceed the 16MB BSON object size
     // limit
-    const int kMaxBatchSize = 10'000;
+    const int kMaxBatchSize = 10000;//10'000; yang change
 
     LogicalSessionIdSet lsids;
     int numReaped = 0;

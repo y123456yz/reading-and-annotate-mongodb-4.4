@@ -48,13 +48,12 @@ WriteUnitOfWork::WriteUnitOfWork(OperationContext* opCtx)
     uassert(ErrorCodes::IllegalOperation,
             "Cannot execute a write operation in read-only mode",
             !storageGlobalParams.readOnly);
+	//LockerImpl::beginWriteUnitOfWork()
     _opCtx->lockState()->beginWriteUnitOfWork();
-	    LOGV2_DEBUG(22414,
-                3,
-                "yang test",
-                " WriteUnitOfWork::WriteUnitOfWork ";
+
     if (_toplevel) {
 		//WiredTigerRecoveryUnit::beginUnitOfWork
+		 //recoveryUnit来源在ServiceContextMongoD::_newOpCtx，也就是WiredTigerRecoveryUnit::beginUnitOfWork
         _opCtx->recoveryUnit()->beginUnitOfWork(_opCtx);
         _opCtx->_ruState = RecoveryUnitState::kActiveUnitOfWork;
     }

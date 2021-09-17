@@ -29,6 +29,7 @@
 
 #define MONGO_LOGV2_DEFAULT_COMPONENT ::mongo::logv2::LogComponent::kWrite
 
+
 #include "mongo/platform/basic.h"
 
 #include <memory>
@@ -111,6 +112,7 @@ void updateRetryStats(OperationContext* opCtx, bool containsRetry) {
     }
 }
 
+// performDeletes  performUpdates慢日志会打印一次，这里还会打印一次，实际有两条日志
 void finishCurOp(OperationContext* opCtx, CurOp* curOp) {
     try {
         curOp->done();
@@ -481,12 +483,20 @@ bool insertBatchAndHandleErrors(OperationContext* opCtx,
                 curOp.debug().additiveMetrics.incrementNinserted(batch.size());
                 return true;
             }
-        } catch (const DBException&) {
+        } catch (const DBException&) { //批量写入失败，则后面一条一条的写
             // Ignore this failure and behave as if we never tried to do the combined batch
             // insert. The loop below will handle reporting any non-transient errors.
             collection.reset();
+			//注意这里没有return
         }
     }
+
+	//固定集合或者batch=1
+	
+	// Try to insert the batch one-at-a-time. This path is executed both for singular batches, and
+	// for batches that failed all-at-once inserting.
+	//一次性一条一条插入，上面集合是一次性插入
+
 
     // Try to insert the batch one-at-a-time. This path is executed for singular batches,
     // multi-statement transactions, capped collections, and if we failed all-at-once inserting.
@@ -495,14 +505,16 @@ bool insertBatchAndHandleErrors(OperationContext* opCtx,
         ServerWriteConcernMetrics::get(opCtx)->recordWriteConcernForInsert(
             opCtx->getWriteConcern());
         try {
+			//writeConflictRetry里面会执行{}中的函数体 
             writeConflictRetry(opCtx, "insert", wholeOp.getNamespace().ns(), [&] {
                 try {
                     if (!collection)
-                        acquireCollection();
+                        acquireCollection();//执行上面定义的函数  创建集合
                     // Transactions are not allowed to operate on capped collections.
                     uassertStatusOK(
                         checkIfTransactionOnCappedColl(opCtx, collection->getCollection()));
                     lastOpFixer->startingOp();
+					//把该条文档插入  
                     insertDocuments(opCtx, collection->getCollection(), it, it + 1, fromMigrate);
                     lastOpFixer->finishedOpSuccessfully();
                     SingleWriteResult result;
@@ -519,13 +531,16 @@ bool insertBatchAndHandleErrors(OperationContext* opCtx,
                     throw;
                 }
             });
-        } catch (const DBException& ex) {
+        } catch (const DBException& ex) {//写入异常
+        	//注意这里，如果失败是否还可以继续后续数据的写入
             bool canContinue =
                 handleError(opCtx, ex, wholeOp.getNamespace(), wholeOp.getWriteCommandBase(), out);
 
             if (!canContinue) {
                 // Failed in ordered batch, or in a transaction, or from some unrecoverable error.
                 return false;
+				//注意这里直接退出循环，也就是本批次数据后续数据没有写入了
+                //例如第1-5条数据写入成功，第6条数据写入失败，则后续数据不在写入
             }
         }
     }
@@ -815,6 +830,7 @@ static SingleWriteResult performSingleUpdateOpWithDupKeyRetry(OperationContext* 
 
     MONGO_UNREACHABLE;
 }
+
 
 WriteResult performUpdates(OperationContext* opCtx, const write_ops::Update& wholeOp) {
     // Update performs its own retries, so we should not be in a WriteUnitOfWork unless run in a

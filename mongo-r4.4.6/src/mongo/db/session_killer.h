@@ -73,6 +73,7 @@ public:
     using Result = StatusWith<std::vector<HostAndPort>>;
     using UniformRandomBitGenerator = std::minstd_rand;
 
+    //db.runCommand( { killAllSessionsByPattern: [ <pattern>, ... ] } )账号维度和session关联，可以通过账号确定kill那些session
     class Matcher {
     public:
         Matcher(KillAllSessionsByPatternSet&& patterns);

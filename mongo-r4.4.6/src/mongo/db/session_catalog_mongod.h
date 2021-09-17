@@ -100,7 +100,7 @@ public:
      */
     static void checkOut(OperationContext* opCtx);
 
-private:
+private: 
     OperationContextSession _operationContextSession;
 };
 

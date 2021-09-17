@@ -100,6 +100,7 @@ ServiceContext* ServiceLiaisonMongod::_context() {
     return getGlobalServiceContext();
 }
 
+//LogicalSessionCacheImpl::_refresh
 std::pair<Status, int> ServiceLiaisonMongod::killCursorsWithMatchingSessions(
     OperationContext* opCtx, const SessionKiller::Matcher& matcher) {
     return CursorManager::get(opCtx)->killCursorsWithMatchingSessions(opCtx, matcher);

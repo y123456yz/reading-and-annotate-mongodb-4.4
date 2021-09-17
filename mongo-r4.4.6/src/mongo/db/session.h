@@ -40,6 +40,7 @@ namespace mongo {
  * A decorable container for state associated with an active session running on a MongoD or MongoS
  * server. Refer to SessionCatalog for more information on the semantics of sessions.
  */
+//SessionCatalog::SessionRuntimeInfo.session、ObservableSession._session为该类型
 class Session : public Decorable<Session> {
     Session(const Session&) = delete;
     Session& operator=(const Session&) = delete;

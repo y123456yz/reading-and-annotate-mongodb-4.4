@@ -402,6 +402,7 @@ public:
      * Returns whether this operation is part of a multi-document transaction. Specifically, it
      * indicates whether the user asked for a multi-document transaction.
      */
+    //initializeOperationSessionInfo中赋值  autocommit=true才会满足条件
     bool inMultiDocumentTransaction() const {
         return _inMultiDocumentTransaction;
     }

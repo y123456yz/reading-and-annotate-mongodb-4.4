@@ -72,6 +72,7 @@ inline bool operator!=(const KillAllSessionsByPattern& lhs, const KillAllSession
     return !(lhs == rhs);
 }
 
+//db.runCommand( { killAllSessionsByPattern: [ <pattern>, ... ] } )账号维度和session关联，可以通过账号确定kill那些session
 using KillAllSessionsByPatternSet =
     stdx::unordered_set<KillAllSessionsByPattern, KillAllSessionsByPatternHash>;
 

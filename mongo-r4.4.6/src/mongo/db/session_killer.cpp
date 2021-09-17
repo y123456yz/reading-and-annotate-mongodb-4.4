@@ -82,7 +82,7 @@ SessionKiller::~SessionKiller() {
 }
 
 SessionKiller::ReapResult::ReapResult() : result(std::make_shared<boost::optional<Result>>()) {}
-
+//db.runCommand( { killAllSessionsByPattern: [ <pattern>, ... ] } )账号维度和session关联，可以通过账号确定kill那些session
 SessionKiller::Matcher::Matcher(KillAllSessionsByPatternSet&& patterns)
     : _patterns(std::move(patterns)) {
     for (const auto& pattern : _patterns) {

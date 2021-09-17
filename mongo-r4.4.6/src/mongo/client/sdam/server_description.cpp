@@ -51,6 +51,7 @@ std::set<ServerType> kDataServerTypes{
 
 }  // namespace
 
+//解析master输出结果
 ServerDescription::ServerDescription(ClockSource* clockSource,
                                      const IsMasterOutcome& isMasterOutcome,
                                      boost::optional<IsMasterRTT> lastRtt,
@@ -75,7 +76,7 @@ ServerDescription::ServerDescription(ClockSource* clockSource,
 
         auto lsTimeoutField = response.getField("logicalSessionTimeoutMinutes");
         if (lsTimeoutField.type() == BSONType::NumberInt) {
-            _logicalSessionTimeoutMinutes = lsTimeoutField.numberInt();
+            ;//_logicalSessionTimeoutMinutes = lsTimeoutField.numberInt();  yang add change todo 
         }
 
         auto setVersionField = response.getField("setVersion");
@@ -196,6 +197,7 @@ void ServerDescription::saveLastWriteInfo(BSONObj lastWriteBson) {
     }
 }
 
+//解析master输出结果
 void ServerDescription::parseTypeFromIsMaster(const BSONObj isMaster) {
     ServerType t;
     bool hasSetName = isMaster.hasField("setName");

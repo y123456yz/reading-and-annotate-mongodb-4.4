@@ -53,7 +53,7 @@ namespace {
  *  2) If any of the selected sessions are currently checked out, interrupt the owning operation
  *     context with 'reason' as the code.
  *  3) Finish killing the selected and interrupted sessions through the 'killSessionFn'.
- */
+ */ 
 void killSessionsAction(
     OperationContext* opCtx,
     const SessionKiller::Matcher& matcher,

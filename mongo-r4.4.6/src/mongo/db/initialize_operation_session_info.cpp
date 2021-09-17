@@ -26,6 +26,10 @@
  *    exception statement from all source files in the program, then also delete
  *    it in the license file.
  */
+#define MONGO_LOGV2_DEFAULT_COMPONENT ::mongo::logv2::LogComponent::kWrite
+#include "mongo/logv2/log.h"
+
+
 
 #include "mongo/platform/basic.h"
 
@@ -46,7 +50,9 @@ OperationSessionInfoFromClient initializeOperationSessionInfo(OperationContext* 
                                                               bool attachToOpCtx,
                                                               bool isReplSetMemberOrMongos,
                                                               bool supportsDocLocking) {
+    //参考https://docs.mongodb.com/manual/reference/server-sessions/
     auto osi = OperationSessionInfoFromClient::parse("OperationSessionInfo"_sd, requestBody);
+
 
     if (opCtx->getClient()->isInDirectClient()) {
         uassert(50891,
@@ -79,6 +85,7 @@ OperationSessionInfoFromClient initializeOperationSessionInfo(OperationContext* 
         }
     }
 
+	//OperationSessionInfoFromClient::getSessionId   3.6开始客户端都会携带lsid
     if (osi.getSessionId()) {
         stdx::lock_guard<Client> lk(*opCtx->getClient());
 
@@ -98,6 +105,7 @@ OperationSessionInfoFromClient initializeOperationSessionInfo(OperationContext* 
         }
 
         opCtx->setLogicalSessionId(std::move(lsid));
+		////LogicalSessionCacheImpl::vivify
         uassertStatusOK(lsc->vivify(opCtx, opCtx->getLogicalSessionId().get()));
     } else {
         uassert(ErrorCodes::InvalidOptions,

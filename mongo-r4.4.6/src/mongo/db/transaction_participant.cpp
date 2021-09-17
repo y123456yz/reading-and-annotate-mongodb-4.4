@@ -123,6 +123,7 @@ struct ActiveTransactionHistory {
     bool hasIncompleteHistory{false};
 };
 
+//TransactionParticipant::Participant::refreshFromStorageIfNeeded
 ActiveTransactionHistory fetchActiveTransactionHistory(OperationContext* opCtx,
                                                        const LogicalSessionId& lsid) {
     // Restore the current timestamp read source after fetching transaction history using
@@ -2312,6 +2313,7 @@ void TransactionParticipant::Participant::_setNewTxnNumber(OperationContext* opC
     o(lk).transactionMetricsObserver.resetSingleTransactionStats(txnNumber);
 }
 
+//MongoDOperationContextSession::MongoDOperationContextSession  MongoDOperationContextSession::checkOut
 void TransactionParticipant::Participant::refreshFromStorageIfNeeded(OperationContext* opCtx) {
     invariant(!opCtx->getClient()->isInDirectClient());
     invariant(!opCtx->lockState()->isLocked());

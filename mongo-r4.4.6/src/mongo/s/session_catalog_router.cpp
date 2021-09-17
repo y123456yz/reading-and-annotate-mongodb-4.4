@@ -38,6 +38,11 @@
 
 namespace mongo {
 
+//mongod对应MongoDSessionCatalog::reapSessionsOlderThan
+//mongos对应RouterSessionCatalog::reapSessionsOlderThan
+
+//把session已经过期的transaction标记出来
+//LogicalSessionCacheImpl::_reap
 int RouterSessionCatalog::reapSessionsOlderThan(OperationContext* opCtx,
                                                 SessionsCollection& sessionsCollection,
                                                 Date_t possiblyExpired) {

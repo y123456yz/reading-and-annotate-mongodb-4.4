@@ -48,6 +48,7 @@
 
 namespace mongo {
 
+//cfg路由信息启用分片功能记录下来
 void SessionsCollectionConfigServer::_shardCollectionIfNeeded(OperationContext* opCtx) {
     // First, check if the collection is already sharded.
     try {
@@ -78,6 +79,7 @@ void SessionsCollectionConfigServer::_shardCollectionIfNeeded(OperationContext* 
     }
 }
 
+//SessionsCollectionConfigServer::setupSessionsCollection
 void SessionsCollectionConfigServer::_generateIndexesIfNeeded(OperationContext* opCtx) {
     const auto nss = NamespaceString::kLogicalSessionsNamespace;
 
@@ -90,6 +92,8 @@ void SessionsCollectionConfigServer::_generateIndexesIfNeeded(OperationContext* 
             auto routingInfo = uassertStatusOK(
                 Grid::get(opCtx)->catalogCache()->getCollectionRoutingInfo(opCtx, nss));
 
+			//通知分片对应的副本集主节点创建config.system.sesssions表
+			//如果没启用分片功能，则直接在主分片创建，如果该表以及启用了分片功能，则所有分片下面的副本集都需要创建表
             scatterGatherVersionedTargetByRoutingTable(
                 opCtx,
                 nss.db(),

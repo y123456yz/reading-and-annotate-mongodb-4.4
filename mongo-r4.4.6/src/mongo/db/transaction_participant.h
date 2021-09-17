@@ -262,7 +262,7 @@ public:
     /**
      * Class used by observers to examine the state of a TransactionParticipant.
      */ 
-     //下面的Participant继承该类
+     //下面的Participant继承该类，观察者
     class Observer {
     public:
         explicit Observer(const ObservableSession& session);

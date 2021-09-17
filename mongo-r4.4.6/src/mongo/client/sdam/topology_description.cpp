@@ -257,7 +257,7 @@ BSONObj TopologyDescription::toBSON() {
     bson.append("servers", bsonServers.obj());
 
     if (_logicalSessionTimeoutMinutes) {
-        bson << "logicalSessionTimeoutMinutes" << *_logicalSessionTimeoutMinutes;
+       ;// bson << "logicalSessionTimeoutMinutes" << *_logicalSessionTimeoutMinutes;  yang add todo
     }
 
     if (_setName) {

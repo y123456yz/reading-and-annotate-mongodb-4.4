@@ -116,7 +116,7 @@ public:
      */
     size_t size() const;
 
-private:
+private:  
     friend ScopedBlockSessionCheckouts;
     struct SessionRuntimeInfo {
         SessionRuntimeInfo(LogicalSessionId lsid) : session(std::move(lsid)) {}
@@ -223,6 +223,7 @@ private:
     SessionCatalog::SessionRuntimeInfo* _sri;
     boost::optional<SessionCatalog::KillToken> _killToken;
 };
+
 
 class OperationContextSession;
 
@@ -340,9 +341,13 @@ private:
      * Returns whether 'kill' has been called on this session.
      */
     bool _killed() const;
-
+    
     Session* _session;
     stdx::unique_lock<Client> _clientLock;
+    //mongod: MongoDSessionCatalog::reapSessionsOlderThan
+    //mongos: RouterSessionCatalog::reapSessionsOlderThan
+
+    //system.sessions表中该session已过期，则把_markedForReap标记为true
     bool _markedForReap{false};
 };
 
@@ -351,6 +356,8 @@ private:
  * it for later access by the command. The session is installed at construction time and is removed
  * at destruction.
  */
+//mongos: RouterOperationContextSession._operationContextSession
+//mongod: MongoDOperationContextSession._operationContextSession
 class OperationContextSession {
     OperationContextSession(const OperationContextSession&) = delete;
     OperationContextSession& operator=(const OperationContextSession&) = delete;

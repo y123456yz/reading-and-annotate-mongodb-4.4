@@ -323,6 +323,8 @@ BSONObj stripWriteConcern(const BSONObj& cmdObj) {
     return output.obj();
 }
 
+//通知分片对应的副本集主节点创建config.system.sesssions表
+//如果没启用分片功能，则直接在主分片创建，如果该表以及启用了分片功能，则所有分片下面的副本集都需要创建表
 std::vector<AsyncRequestsSender::Request> buildVersionedRequestsForTargetedShards(
     OperationContext* opCtx,
     const NamespaceString& nss,
@@ -380,6 +382,8 @@ std::vector<AsyncRequestsSender::Response> scatterGatherUnversionedTargetAllShar
         opCtx, dbName, readPref, retryPolicy, buildUnversionedRequestsForAllShards(opCtx, cmdObj));
 }
 
+//通知分片对应的副本集主节点创建config.system.sesssions表
+//如果没启用分片功能，则直接在主分片创建，如果该表以及启用了分片功能，则所有分片下面的副本集都需要创建表
 std::vector<AsyncRequestsSender::Response> scatterGatherVersionedTargetByRoutingTable(
     OperationContext* opCtx,
     StringData dbName,

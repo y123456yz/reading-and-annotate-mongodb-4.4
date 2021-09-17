@@ -920,7 +920,6 @@ bool runCommandImpl(OperationContext* opCtx,
  */
 //mongos流程ServiceEntryPointMongos::handleRequest->Strategy::clientCommand->runCommand
 //mongod流程:ServiceEntryPointMongod::handleRequest->runCommands->execCommandDatabase调用
-
 void execCommandDatabase(OperationContext* opCtx,
                          Command* command,
                          const OpMsgRequest& request,

@@ -559,6 +559,7 @@ void Refresher::scheduleIsMaster(const HostAndPort& host) {
             auto timer = Timer();
             auto reply = BSONObj();
             bool ignoredOutParam = false;
+			//执行isMaster命令获取副本集状态
             conn->isMaster(ignoredOutParam, &reply);
             conn.done();  // return to pool on success.
 
@@ -1177,6 +1178,8 @@ std::vector<HostAndPort> SetState::getMatchingHosts(const ReadPreferenceSetting&
         }
 
         // The difference between these is handled by Node::matches
+        //大致的选取流程为：按照每个节点的延迟升序排序 -> 排除延迟太高的节点（比最近节点的延迟大15ms）
+        // -> 随机返回一个符合条件的节点。
         case ReadPreference::SecondaryOnly:
         case ReadPreference::Nearest: {
             std::function<bool(const Node&)> matchNode = [](const Node& node) -> bool {
@@ -1235,6 +1238,7 @@ std::vector<HostAndPort> SetState::getMatchingHosts(const ReadPreferenceSetting&
 
                 // Only consider nodes that satisfy the minOpTime
                 if (!criteria.minOpTime.isNull()) {
+					
                     std::sort(matchingNodes.begin(), matchingNodes.end(), opTimeGreater);
                     for (size_t i = 0; i < matchingNodes.size(); i++) {
                         if (matchingNodes[i]->opTime < criteria.minOpTime) {
@@ -1263,6 +1267,7 @@ std::vector<HostAndPort> SetState::getMatchingHosts(const ReadPreferenceSetting&
 
             // If there are multiple nodes satisfying the minOpTime, next order by latency
             // and don't consider hosts further than a threshold from the closest.
+            // 对候选节点按延迟进行排序
             std::sort(allMatchingNodes.begin(), allMatchingNodes.end(), compareLatencies);
 
             if (!MONGO_unlikely(scanningServerSelectorIgnoreLatencyWindow.shouldFail())) {

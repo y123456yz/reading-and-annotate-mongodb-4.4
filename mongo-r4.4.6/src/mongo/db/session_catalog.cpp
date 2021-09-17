@@ -71,6 +71,7 @@ SessionCatalog* SessionCatalog::get(ServiceContext* service) {
     return &sessionTransactionTable;
 }
 
+//OperationContextSession::checkOut
 SessionCatalog::ScopedCheckedOutSession SessionCatalog::_checkOutSession(OperationContext* opCtx) {
     // This method is not supposed to be called with an already checked-out session due to risk of
     // deadlock
@@ -103,6 +104,8 @@ SessionCatalog::ScopedCheckedOutSession SessionCatalog::_checkOutSession(Operati
         *this, std::move(sri), boost::none /* Not checked out for kill */);
 }
 
+
+//killSessionTokens  OperationContextSession::OperationContextSession  killSessionsAction
 SessionCatalog::SessionToKill SessionCatalog::checkOutSessionForKill(OperationContext* opCtx,
                                                                      KillToken killToken) {
     // This method is not supposed to be called with an already checked-out session due to risk of
@@ -129,6 +132,7 @@ SessionCatalog::SessionToKill SessionCatalog::checkOutSessionForKill(OperationCo
     return SessionToKill(ScopedCheckedOutSession(*this, std::move(sri), std::move(killToken)));
 }
 
+//_sessions中查找lsid,找到执行workerFn接口，同时从
 void SessionCatalog::scanSession(const LogicalSessionId& lsid,
                                  const ScanSessionsCallbackFn& workerFn) {
     std::unique_ptr<SessionRuntimeInfo> sessionToReap;
@@ -137,6 +141,7 @@ void SessionCatalog::scanSession(const LogicalSessionId& lsid,
         stdx::lock_guard<Latch> lg(_mutex);
         auto it = _sessions.find(lsid);
         if (it != _sessions.end()) {
+			//也就是SessionRuntimeInfo
             auto& sri = it->second;
             ObservableSession osession(lg, sri->session);
             workerFn(osession);
@@ -150,6 +155,10 @@ void SessionCatalog::scanSession(const LogicalSessionId& lsid,
     }
 }
 
+//mongod对应MongoDSessionCatalog::reapSessionsOlderThan调用
+//mongos对应RouterSessionCatalog::reapSessionsOlderThan调用
+
+//从_sessions中找出matcher账号对应的SessionRuntimeInfo, 执行workerFn回调，
 void SessionCatalog::scanSessions(const SessionKiller::Matcher& matcher,
                                   const ScanSessionsCallbackFn& workerFn) {
     std::vector<std::unique_ptr<SessionRuntimeInfo>> sessionsToReap;
@@ -165,11 +174,13 @@ void SessionCatalog::scanSessions(const SessionKiller::Matcher& matcher,
 
         for (auto it = _sessions.begin(); it != _sessions.end(); ++it) {
             if (matcher.match(it->first)) {
+				//也就是SessionRuntimeInfo
                 auto& sri = it->second;
                 ObservableSession osession(lg, sri->session);
 
                 workerFn(osession);
 
+				//把matcher对应的session从_sessions中删除
                 if (osession._markedForReap && !osession._killed() &&
                     !osession.currentOperation() && !sri->numWaitingToCheckOut) {
                     sessionsToReap.emplace_back(std::move(sri));
@@ -190,6 +201,7 @@ void SessionCatalog::_allowCheckouts() {
     _checkoutAllowed = true;
 }
 
+//测试中使用
 SessionCatalog::KillToken SessionCatalog::killSession(const LogicalSessionId& lsid) {
     stdx::lock_guard<Latch> lg(_mutex);
     auto it = _sessions.find(lsid);
@@ -204,6 +216,8 @@ size_t SessionCatalog::size() const {
     return _sessions.size();
 }
 
+//killSessionTokens  SessionCatalog::_checkOutSession  SessionCatalog::checkOutSessionForKill  killSessionsAction
+//_sessions中没有lsid，则添加到_sessions
 SessionCatalog::SessionRuntimeInfo* SessionCatalog::_getOrCreateSessionRuntimeInfo(
     WithLock, OperationContext* opCtx, const LogicalSessionId& lsid) {
     auto it = _sessions.find(lsid);
@@ -235,6 +249,7 @@ SessionCatalog::SessionRuntimeInfo::~SessionRuntimeInfo() {
     invariant(!numWaitingToCheckOut);
 }
 
+//SessionCatalog::killSession
 SessionCatalog::KillToken ObservableSession::kill(ErrorCodes::Error reason) const {
     const bool firstKiller = (0 == _session->_killsRequested);
     ++_session->_killsRequested;
@@ -244,12 +259,15 @@ SessionCatalog::KillToken ObservableSession::kill(ErrorCodes::Error reason) cons
     if (firstKiller && _session->_checkoutOpCtx) {
         invariant(_clientLock);
         const auto serviceContext = _session->_checkoutOpCtx->getServiceContext();
+		//ServiceContext::killOperation
         serviceContext->killOperation(_clientLock, _session->_checkoutOpCtx, reason);
     }
 
     return SessionCatalog::KillToken(getSessionId());
 }
 
+//mongod: MongoDSessionCatalog::reapSessionsOlderThan
+//mongos: RouterSessionCatalog::reapSessionsOlderThan
 void ObservableSession::markForReap() {
     _markedForReap = true;
 }
@@ -258,6 +276,8 @@ bool ObservableSession::_killed() const {
     return _session->_killsRequested > 0;
 }
 
+
+//execCommandDatabase调用
 OperationContextSession::OperationContextSession(OperationContext* opCtx) : _opCtx(opCtx) {
     auto& checkedOutSession = operationSessionDecoration(opCtx);
     if (checkedOutSession) {
@@ -270,6 +290,7 @@ OperationContextSession::OperationContextSession(OperationContext* opCtx) : _opC
     checkOut(opCtx);
 }
 
+//implicitlyAbortAllTransactions
 OperationContextSession::OperationContextSession(OperationContext* opCtx,
                                                  SessionCatalog::KillToken killToken)
     : _opCtx(opCtx) {
@@ -310,6 +331,7 @@ Session* OperationContextSession::get(OperationContext* opCtx) {
     return nullptr;
 }
 
+//MongoDOperationContextSession::checkIn
 void OperationContextSession::checkIn(OperationContext* opCtx) {
     auto& checkedOutSession = operationSessionDecoration(opCtx);
     invariant(checkedOutSession);
@@ -326,11 +348,14 @@ void OperationContextSession::checkIn(OperationContext* opCtx) {
     lk.unlock();
 }
 
+
+//OperationContextSession::OperationContextSession  MongoDOperationContextSession::checkOut
 void OperationContextSession::checkOut(OperationContext* opCtx) {
     auto& checkedOutSession = operationSessionDecoration(opCtx);
     invariant(!checkedOutSession);
 
     const auto catalog = SessionCatalog::get(opCtx);
+	//SessionCatalog::_checkOutSession
     auto scopedCheckedOutSession = catalog->_checkOutSession(opCtx);
 
     // We acquire a Client lock here to guard the construction of this session so that references to

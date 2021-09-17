@@ -146,6 +146,7 @@ void SessionsCollectionRS::setupSessionsCollection(OperationContext* opCtx) {
         [&](DBClientBase*) { checkSessionsCollectionExists(opCtx); });
 }
 
+//检查"system.sessions"表及其过期索引是否存在
 void SessionsCollectionRS::checkSessionsCollectionExists(OperationContext* opCtx) {
     DBDirectClient client(opCtx);
 

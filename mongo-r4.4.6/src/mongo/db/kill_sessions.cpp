@@ -96,6 +96,7 @@ std::tuple<std::vector<UserName>, std::vector<RoleName>> getKillAllSessionsByPat
     return out;
 }
 
+//MongoDSessionCatalog::reapSessionsOlderThan
 KillAllSessionsByPattern makeKillAllSessionsByPattern(OperationContext* opCtx) {
     KillAllSessionsByPattern kasbp;
 

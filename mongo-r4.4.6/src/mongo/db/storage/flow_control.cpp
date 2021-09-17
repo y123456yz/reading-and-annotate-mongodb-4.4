@@ -130,6 +130,20 @@ bool sustainerAdvanced(const std::vector<repl::MemberData>& prevMemberData,
 }
 }  // namespace
 
+
+/*
+test_auth_repl_4.4.6:PRIMARY> db.serverStatus().flowControl
+{
+        "enabled" : true,
+        "targetRateLimit" : 1000000000,
+        "timeAcquiringMicros" : NumberLong(10043),
+        "locksPerKiloOp" : 100488,
+        "sustainerRate" : 0,
+        "isLagged" : false,
+        "isLaggedCount" : 4,
+        "isLaggedTimeMicros" : NumberLong(3983450)
+}
+*/
 FlowControl::FlowControl(repl::ReplicationCoordinator* replCoord)
     : ServerStatusSection("flowControl"),
       _replCoord(replCoord),

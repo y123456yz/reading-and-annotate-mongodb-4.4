@@ -59,6 +59,16 @@ const NamespaceString NamespaceString::kLogicalSessionsNamespace(NamespaceString
                                                                  "system.sessions");
 
 // Persisted state for a shard participating in a transaction or retryable write.
+
+/*
+test_auth_repl_4.4.6:PRIMARY> db.aggregate( [  { $listLocalSessions: { allUsers: true } } ] )
+{ "_id" : { "id" : UUID("88e8670b-a4c6-4a35-9a2b-c4e6b62926c0"), "uid" : BinData(0,"Y5mrDaxi8gv8RmdTsQ+1j7fmkr7JUsabhNmXAheU0fg=") }, "lastUse" : ISODate("2021-08-18T07:46:29.423Z"), "user" : "root@admin" }
+test_auth_repl_4.4.6:PRIMARY> db.transactions.find()
+{ "_id" : { "id" : UUID("88e8670b-a4c6-4a35-9a2b-c4e6b62926c0"), "uid" : BinData(0,"Y5mrDaxi8gv8RmdTsQ+1j7fmkr7JUsabhNmXAheU0fg=") }, "txnNum" : NumberLong(0), "lastWriteOpTime" : { "ts" : Timestamp(1629272789, 1), "t" : NumberLong(12) }, "lastWriteDate" : ISODate("2021-08-18T07:46:29.423Z"), "state" : "committed" }
+sessions和transactions的_id是一样的，事务在指定的session中实现的
+*/
+
+//事务提交后，会更新记录该表的，在同一个session中进行多个事务操作，则对对应的txnNum  lastWriteOpTime等字段进行更新
 const NamespaceString NamespaceString::kSessionTransactionsTableNamespace(
     NamespaceString::kConfigDb, "transactions");
 

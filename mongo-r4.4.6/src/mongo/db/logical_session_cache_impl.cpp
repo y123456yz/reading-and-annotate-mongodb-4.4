@@ -58,6 +58,18 @@ void clearShardingOperationFailedStatus(OperationContext* opCtx) {
 
 }  // namespace
 
+/*
+mongos赋值:
+//LogicalSessionCache::set(
+//	serviceContext,
+//	std::make_unique<LogicalSessionCacheImpl>(std::make_unique<ServiceLiaisonMongos>(),
+//											  std::make_unique<SessionsCollectionSharded>(),
+//											  RouterSessionCatalog::reapSessionsOlderThan));
+
+mongod赋值:
+//makeLogicalSessionCacheD
+*/
+//makeLogicalSessionCacheS  makeLogicalSessionCacheD调用
 LogicalSessionCacheImpl::LogicalSessionCacheImpl(std::unique_ptr<ServiceLiaison> service,
                                                  std::shared_ptr<SessionsCollection> collection,
                                                  ReapSessionsOlderThanFn reapSessionsOlderThanFn)
@@ -67,6 +79,7 @@ LogicalSessionCacheImpl::LogicalSessionCacheImpl(std::unique_ptr<ServiceLiaison>
     _stats.setLastSessionsCollectionJobTimestamp(_service->now());
     _stats.setLastTransactionReaperJobTimestamp(_service->now());
 
+	//千万不能关闭，否则_activeSessions会持续增加，内存会耗尽
     if (!disableLogicalSessionCacheRefresh) {
 		//定期refresh
         _service->scheduleJob({"LogicalSessionCacheRefresh",
@@ -94,6 +107,7 @@ Status LogicalSessionCacheImpl::startSession(OperationContext* opCtx,
     return _addToCacheIfNotFull(lg, record);
 }
 
+//initializeOperationSessionInfo
 Status LogicalSessionCacheImpl::vivify(OperationContext* opCtx, const LogicalSessionId& lsid) {
     stdx::lock_guard lg(_mutex);
     auto it = _activeSessions.find(lsid);
@@ -159,6 +173,7 @@ Status LogicalSessionCacheImpl::_reap(Client* client) {
         return uniqueCtx->get();
     }();
 
+	//arbiter节点直接返回
     const auto replCoord = repl::ReplicationCoordinator::get(opCtx);
     if (replCoord && replCoord->isReplEnabled() && replCoord->getMemberState().arbiter()) {
         return Status::OK();
@@ -182,7 +197,12 @@ Status LogicalSessionCacheImpl::_reap(Client* client) {
     try {
         ON_BLOCK_EXIT([&opCtx] { clearShardingOperationFailedStatus(opCtx); });
         try {
-            _sessionsColl->checkSessionsCollectionExists(opCtx);
+		    //1. mongod对应makeSessionsCollection中构造使用，
+			// 和SessionsCollectionSharded	SessionsCollectionConfigServer SessionsCollectionRS SessionsCollectionStandalone同级
+			// mongos对应SessionsCollectionSharded，见makeLogicalSessionCacheS
+			//2. mongos对应SessionsCollectionSharded::checkSessionsCollectionExists  mongod对应SessionsCollectionRS::checkSessionsCollectionExists
+			//检查"system.sessions"表及其过期索引是否存在
+			_sessionsColl->checkSessionsCollectionExists(opCtx);
         } catch (const DBException& ex) {
             if (ex.code() != ErrorCodes::NamespaceNotFound ||
                 ex.code() != ErrorCodes::NamespaceNotSharded) {
@@ -199,6 +219,10 @@ Status LogicalSessionCacheImpl::_reap(Client* client) {
             }
             return Status::OK();
         }
+
+	 
+		//mongod对应MongoDSessionCatalog::reapSessionsOlderThan
+		//mongos对应RouterSessionCatalog::reapSessionsOlderThan
         numReaped = _reapSessionsOlderThanFn(opCtx,
                                              *_sessionsColl,
                                              _service->now() -
@@ -223,6 +247,11 @@ Status LogicalSessionCacheImpl::_reap(Client* client) {
     return Status::OK();
 }
 
+//注意:如果出现如下打印，active session刷新到config.sessions表会失败，active session会持续性增加，直到超过max session
+// mongod.log.2021-09-10T08-22-28:Thu Sep  9 17:28:32.501 I CONTROL  [LogicalSessionCacheRefresh] Failed to refresh session cache: NoProgressMade: no progress was made executing batch write op in config.system.sessions after 5 rounds (0 ops completed in 6 rounds total)
+
+//除了做sessin刷新外，还可以用于cursor回收处理。客户端链接关闭(会发送endsession)或者不关闭链接发送endsession结束会话，会发送endsession过来，从而加入_endingSessions，做session删除处理
+//此外，该接口还负责cursor游标清理
 void LogicalSessionCacheImpl::_refresh(Client* client) {
     // get or make an opCtx
     boost::optional<ServiceContext::UniqueOperationContext> uniqueCtx;
@@ -265,6 +294,13 @@ void LogicalSessionCacheImpl::_refresh(Client* client) {
     ON_BLOCK_EXIT([&opCtx] { clearShardingOperationFailedStatus(opCtx); });
 
     try {
+	// Refresh the active sessions in the sessions collection.
+    //1. mongod对应makeLogicalSessionCacheD中构造使用，
+	// 和SessionsCollectionSharded	SessionsCollectionConfigServer SessionsCollectionRS SessionsCollectionStandalone同级
+	// mongos对应SessionsCollectionSharded，见makeLogicalSessionCacheS
+	//2. mongos对应SessionsCollectionSharded::setupSessionsCollection  普通副本集mongod对应SessionsCollectionRS::setupSessionsCollection
+	//  分片模式副本集mongod对应SessionsCollectionSharded::setupSessionsCollection   cfg server为:SessionsCollectionConfigServer::setupSessionsCollection
+	////system.sessions创建索引及启用分片等 
         _sessionsColl->setupSessionsCollection(opCtx);
     } catch (const DBException& ex) {
         LOGV2(
@@ -323,6 +359,12 @@ void LogicalSessionCacheImpl::_refresh(Client* client) {
     }
 
     // Refresh the active sessions in the sessions collection.
+    //1. mongod对应makeLogicalSessionCacheD中构造使用，
+	// 和SessionsCollectionSharded	SessionsCollectionConfigServer SessionsCollectionRS SessionsCollectionStandalone同级
+	// mongos对应SessionsCollectionSharded，见makeLogicalSessionCacheS
+	//2. mongos对应SessionsCollectionSharded::refreshSessions  普通副本集mongod对应SessionsCollectionRS::refreshSessions
+	//  分片模式副本集mongod对应SessionsCollectionSharded::refreshSessions  cfg server为:SessionsCollectionConfigServer::refreshSessions
+	////system.sessions创建索引及启用分片等 
     _sessionsColl->refreshSessions(opCtx, activeSessionRecords);
     activeSessionsBackSwapper.dismiss();
     {
@@ -341,14 +383,16 @@ void LogicalSessionCacheImpl::_refresh(Client* client) {
     // Find which running, but not recently active sessions, are expired, and add them
     // to the list of sessions to kill cursors for
 
+	//
     KillAllSessionsByPatternSet patterns;
-
+    
     auto openCursorSessions = _service->getOpenCursorSessions(opCtx);
     // Exclude sessions added to _activeSessions from the openCursorSession to avoid race between
     // killing cursors on the removed sessions and creating sessions.
     {
         stdx::lock_guard<Latch> lk(_mutex);
 
+		//把当前一个周期内所有session中活跃的sesson剔除，剩下的就该周期内不活跃的session，例如该周期内没有收到session交互
         for (const auto& it : _activeSessions) {
             auto newSessionIt = openCursorSessions.find(it.first);
             if (newSessionIt != openCursorSessions.end()) {
@@ -359,6 +403,7 @@ void LogicalSessionCacheImpl::_refresh(Client* client) {
 
     // think about pruning ending and active out of openCursorSessions
     try {
+    	//system.sessions表都没有该session，说明表中已过期， 该session空闲太久了，可以进行session回收处理
         auto removedSessions = _sessionsColl->findRemovedSessions(opCtx, openCursorSessions);
 
         for (const auto& lsid : removedSessions) {
@@ -374,6 +419,7 @@ void LogicalSessionCacheImpl::_refresh(Client* client) {
     }
 
     SessionKiller::Matcher matcher(std::move(patterns));
+	//
     auto killRes = _service->killCursorsWithMatchingSessions(opCtx, std::move(matcher));
     {
         stdx::lock_guard<Latch> lk(_mutex);

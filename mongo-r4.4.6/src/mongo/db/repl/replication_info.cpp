@@ -518,7 +518,7 @@ public:
         result.appendNumber("maxMessageSizeBytes", MaxMessageSizeBytes);
         result.appendNumber("maxWriteBatchSize", write_ops::kMaxWriteBatchSize);
         result.appendDate("localTime", jsTime());
-        result.append("logicalSessionTimeoutMinutes", localLogicalSessionTimeoutMinutes);
+        //result.append("logicalSessionTimeoutMinutes", localLogicalSessionTimeoutMinutes);  //yang add change todo 
         result.appendNumber("connectionId", opCtx->getClient()->getConnectionId());
 
         if (internalClientElement) {

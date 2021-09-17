@@ -46,6 +46,7 @@ namespace mongo {
  */
 const auto kNoAuthDigest = SHA256Block::computeHash(reinterpret_cast<const uint8_t*>(""), 0);
 
+//makeLogicalSessionId
 SHA256Block getLogicalSessionUserDigestForLoggedInUser(const OperationContext* opCtx) {
     auto client = opCtx->getClient();
     ServiceContext* serviceContext = client->getServiceContext();
@@ -75,6 +76,7 @@ SHA256Block getLogicalSessionUserDigestFor(StringData user, StringData db) {
     return SHA256Block::computeHash({ConstDataRange(fn.c_str(), fn.size())});
 }
 
+//initializeOperationSessionInfo调用，这里填充增加system.sessions中的UUID
 LogicalSessionId makeLogicalSessionId(const LogicalSessionFromClient& fromClient,
                                       OperationContext* opCtx,
                                       std::initializer_list<Privilege> allowSpoof) {
