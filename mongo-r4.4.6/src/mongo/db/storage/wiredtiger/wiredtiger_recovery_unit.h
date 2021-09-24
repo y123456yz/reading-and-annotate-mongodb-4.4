@@ -91,6 +91,23 @@ private:
     std::map<int, long long> _stats;
 };
 
+/*
+insertDocuments {
+    WriteUnitOfWork wuow1(opCtx);
+    ...
+    CollectionImpl::insertDocuments->OpObserverImpl::onInserts
+    {
+        WriteUnitOfWork wuow2(opCtx);
+        ...
+        wuow2.commit();
+    }
+    ...
+    wuow1.commit(); 
+}
+
+wuow1和wuow2的_opCtx是一样的，所以对应的_opCtx->recoveryUnit()也是同一个
+
+*/
 class WiredTigerRecoveryUnit final : public RecoveryUnit {
 public:
     WiredTigerRecoveryUnit(WiredTigerSessionCache* sc);
@@ -149,6 +166,7 @@ public:
 
     ReadSource getTimestampReadSource() const override;
 
+    //wiredTiger_recovery_unit.h中的setOrderedCommit
     virtual void setOrderedCommit(bool orderedCommit) override {
         _orderedCommit = orderedCommit;
     }

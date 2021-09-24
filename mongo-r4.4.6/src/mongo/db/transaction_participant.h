@@ -807,7 +807,7 @@ public:
         using Observer::o;
     };  // class Participant
 
-    //例如performInserts  CmdCommitTxn::run中会调用
+    //例如performInserts  CmdCommitTxn::run  MongoDOperationContextSession等中会调用
     //一次操作(包括事务提交)都对应一个opCtx，一个opCtx和一个Participant一一对应
     static Participant get(OperationContext* opCtx) {
         //操作上下文和Participant一一对应
@@ -898,6 +898,7 @@ private:
         // number in the last written txn record. When it is > than that in the last written txn
         // record, this means a new transaction has begun on the session, but it hasn't yet
         // performed any writes.
+        //Participant::_setNewTxnNumber 也就是事务号
         TxnNumber activeTxnNumber{kUninitializedTxnNumber};
 
         // Caches what is known to be the last optime written for the active transaction.

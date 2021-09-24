@@ -67,6 +67,24 @@ RecoveryUnit::_txnClose封装了WT层的commit_transaction和rollback_transaction。
 //OperationContext._recoveryUnit  OperationContext._writeUnitOfWork分别对应RecoveryUnit和WriteUnitOfWork
 
 
+/*
+insertDocuments {
+    WriteUnitOfWork wuow1(opCtx);
+    ...
+    CollectionImpl::insertDocuments->OpObserverImpl::onInserts
+    {
+        WriteUnitOfWork wuow2(opCtx);
+        ...
+        wuow2.commit();
+    }
+    ...
+    wuow1.commit(); 
+}
+
+wuow1和wuow2的_opCtx是一样的，所以对应的_opCtx->recoveryUnit()也是同一个
+
+*/
+
 //使用可以参考insertDocuments  makeCollection    事务封装
 //OperationContext._writeUnitOfWork为该类型，表示该操作对应的事务相关封装
 class WriteUnitOfWork { //使用可以参考mongo::insertDocuments  makeCollection    事务封装

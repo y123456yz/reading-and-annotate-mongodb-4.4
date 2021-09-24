@@ -622,6 +622,7 @@ StatusWith<OpTime> OplogApplierImpl::_applyOplogBatch(OperationContext* opCtx,
 
     // Stop all readers until we're done. This also prevents doc-locking engines from deleting old
     // entries from the oplog until we finish writing.
+    //加一把全局锁，参考https://mongoing.com/archives/5560  https://mongoing.com/archives/5560  https://cloud.tencent.com/developer/article/1006519
     Lock::ParallelBatchWriterMode pbwm(opCtx->lockState());
 
     invariant(_replCoord);

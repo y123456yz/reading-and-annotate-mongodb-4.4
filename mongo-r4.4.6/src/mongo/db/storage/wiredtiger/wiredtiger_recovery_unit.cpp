@@ -199,6 +199,7 @@ void WiredTigerRecoveryUnit::_commit() {
     _setState(State::kInactive);
 }
 
+
 void WiredTigerRecoveryUnit::_abort() {
     bool notifyDone = !_prepareTimestamp.isNull();
     if (_session && _isActive()) {
@@ -310,6 +311,9 @@ boost::optional<int64_t> WiredTigerRecoveryUnit::getOplogVisibilityTs() {
     return _oplogVisibleTs;
 }
 
+//insertDocuments->oplog.cpp中的getNextOpTimes->LocalOplogInfo::getNextOpTimes->WiredTigerRecoveryUnit::preallocateSnapshot()
+
+// Begin a new transaction, if one is not already started. //事务begin_transaction封装
 WiredTigerSession* WiredTigerRecoveryUnit::getSession() {
     if (!_isActive()) {
         _txnOpen();
@@ -328,6 +332,7 @@ WiredTigerSession* WiredTigerRecoveryUnit::getSessionNoTxn() {
     return session;
 }
 
+
 void WiredTigerRecoveryUnit::doAbandonSnapshot() {
     invariant(!_inUnitOfWork(), toString(_getState()));
     if (_isActive()) {
@@ -337,9 +342,11 @@ void WiredTigerRecoveryUnit::doAbandonSnapshot() {
     _setState(State::kInactive);
 }
 
+//insertDocuments->oplog.cpp中的getNextOpTimes->LocalOplogInfo::getNextOpTimes->WiredTigerRecoveryUnit::preallocateSnapshot()
+//LocalOplogInfo::getNextOpTimes
 void WiredTigerRecoveryUnit::preallocateSnapshot() {
     // Begin a new transaction, if one is not already started.
-    getSession();
+    getSession(); //事务begin_transaction封装
 }
 
 void WiredTigerRecoveryUnit::refreshSnapshot() {
@@ -377,10 +384,12 @@ void WiredTigerRecoveryUnit::refreshSnapshot() {
     _session = std::move(newSession);
 }
 
+
+//WiredTigerRecoveryUnit::_commit()  WiredTigerRecoveryUnit::_abort()  WiredTigerRecoveryUnit::doAbandonSnapshot()
 void WiredTigerRecoveryUnit::_txnClose(bool commit) {
     invariant(_isActive(), toString(_getState()));
     WT_SESSION* s = _session->getSession();
-    if (_timer) {
+    if (_timer) { //定时器把事务满操作慢日志记录下来
         const int transactionTime = _timer->millis();
         // `serverGlobalParams.slowMs` can be set to values <= 0. In those cases, give logging a
         // break.
@@ -540,8 +549,9 @@ boost::optional<Timestamp> WiredTigerRecoveryUnit::getPointInTimeReadTimestamp()
     MONGO_UNREACHABLE;
 }
 
-//WiredTigerRecoveryUnit::getSession()
-void WiredTigerRecoveryUnit::_txnOpen() {
+//WiredTigerRecoveryUnit::getSession()  
+//事务begin_transaction封装
+void WiredTigerRecoveryUnit::_txnOpen() { //也就是对应begin_transaction
     invariant(!_isActive(), toString(_getState()));
     invariant(!_isCommittingOrAborting(),
               str::stream() << "commit or rollback handler reopened transaction: "
@@ -559,6 +569,9 @@ void WiredTigerRecoveryUnit::_txnOpen() {
             if (_isOplogReader) {
                 _oplogVisibleTs = static_cast<std::int64_t>(_oplogManager->getOplogReadTimestamp());
             }
+			//WiredTigerBeginTxnBlock::WiredTigerBeginTxnBlock
+			//WiredTigerBeginTxnBlock::done()
+			//事务begin_transaction封装
             WiredTigerBeginTxnBlock(session, _prepareConflictBehavior, _roundUpPreparedTimestamps)
                 .done();
             break;
@@ -743,6 +756,8 @@ Timestamp WiredTigerRecoveryUnit::_getTransactionReadTimestamp(WT_SESSION* sessi
     return Timestamp(read_timestamp);
 }
 
+//session.commitTransaction();的时候会调用
+//WiredTigerRecordStore::_insertRecords   WiredTigerRecordStore::oplogDiskLocRegister 
 Status WiredTigerRecoveryUnit::setTimestamp(Timestamp timestamp) {
     _ensureSession();
     LOGV2_DEBUG(22415,

@@ -42,6 +42,7 @@
 namespace mongo {
 using namespace fmt::literals;
 
+//ÊÂÎñbegin_transaction·â×°
 WiredTigerBeginTxnBlock::WiredTigerBeginTxnBlock(
     WT_SESSION* session,
     PrepareConflictBehavior prepareConflictBehavior,

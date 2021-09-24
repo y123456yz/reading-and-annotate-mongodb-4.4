@@ -99,6 +99,8 @@ Status LogicalClock::advanceClusterTime(const LogicalTime newTime) {
     return Status::OK();
 }
 
+//LocalOplogInfo::getNextOpTimes
+//这里面保证每次进来获取到的_clusterTime值向前推荐，并且保证每次调用该接口获取的time不一样
 LogicalTime LogicalClock::reserveTicks(uint64_t nTicks) {
 
     invariant(nTicks > 0 && nTicks <= kMaxSignedInt);
@@ -112,7 +114,7 @@ LogicalTime LogicalClock::reserveTicks(uint64_t nTicks) {
     unsigned clusterTimeSecs = clusterTime.asTimestamp().getSecs();
 
     // Synchronize clusterTime with wall clock time, if clusterTime was behind in seconds.
-    if (clusterTimeSecs < wallClockSecs) {
+    if (clusterTimeSecs < wallClockSecs) {//保证每次进来获取到的_clusterTime值向前推荐
         clusterTime = LogicalTime(Timestamp(wallClockSecs, 0));
     }
     // If reserving 'nTicks' would force the cluster timestamp's increment field to exceed (2^31-1),

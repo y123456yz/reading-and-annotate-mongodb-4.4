@@ -313,6 +313,7 @@ bool handleError(OperationContext* opCtx,
     return !wholeOp.getOrdered();
 }
 
+//insertBatchAndHandleErrors->insertDocuments
 void insertDocuments(OperationContext* opCtx,
                      Collection* collection,
                      std::vector<InsertStatement>::iterator begin,
@@ -320,7 +321,16 @@ void insertDocuments(OperationContext* opCtx,
                      bool fromMigrate) {
     // Intentionally not using writeConflictRetry. That is handled by the caller so it can react to
     // oversized batches.
+    LOGV2_DEBUG(122416,
+            3,
+            "yang test .......insertDocuments begin 1");
+	//实际上在insertDocuments->CollectionImpl::insertDocuments->OpObserverImpl::onInserts中会嵌套再次使用WriteUnitOfWork wuow(opCtx);
     WriteUnitOfWork wuow(opCtx);
+
+    LOGV2_DEBUG(122416,
+            3,
+            "yang test .......insertDocuments begin 2");
+
 
     // Acquire optimes and fill them in for each item in the batch.
     // This must only be done for doc-locking storage engines, which are allowed to insert oplog
@@ -337,9 +347,12 @@ void insertDocuments(OperationContext* opCtx,
         if (!inTransaction && !replCoord->isOplogDisabledFor(opCtx, collection->ns())) {
             // Populate 'slots' with new optimes for each insert.
             // This also notifies the storage engine of each new timestamp.
+            //insertDocuments->oplog.cpp中的getNextOpTimes
+            //oplogSlots为OplogSlot数组类型，每条数据会对应生成一个ts，这里面会保证明天记录的ts不一样
             auto oplogSlots = repl::getNextOpTimes(opCtx, batchSize);
             auto slot = oplogSlots.begin();
             for (auto it = begin; it != end; it++) {
+				//每个操作对应的时间ts存到这里
                 it->oplogSlot = *slot++;
             }
         }
@@ -355,12 +368,23 @@ void insertDocuments(OperationContext* opCtx,
             const auto collElem = data["collectionNS"];
             return !collElem || collection->ns().ns() == collElem.str();
         });
+	LOGV2_DEBUG(1224116,
+			3,
+			"yang test .......insertDocuments begin 3");
 
     uassertStatusOK(
 		//CollectionImpl::insertDocuments   
         collection->insertDocuments(opCtx, begin, end, &CurOp::get(opCtx)->debug(), fromMigrate));
+
+    LOGV2_DEBUG(122417,
+            3,
+            "yang test .......insertDocuments end 1");
 	//WriteUnitOfWork::commit
     wuow.commit(); 
+	
+    LOGV2_DEBUG(122416,
+            3,
+            "yang test .......insertDocuments begin 2");
 }
 
 /**
@@ -387,6 +411,8 @@ Status checkIfTransactionOnCappedColl(OperationContext* opCtx, Collection* colle
 /**
  * Returns true if caller should try to insert more documents. Does nothing else if batch is empty.
  */
+
+//performInserts
 bool insertBatchAndHandleErrors(OperationContext* opCtx,
                                 const write_ops::Insert& wholeOp,
                                 std::vector<InsertStatement>& batch,

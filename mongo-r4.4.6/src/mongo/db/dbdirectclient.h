@@ -48,7 +48,8 @@ class OperationContext;
  * calling into any function. If you ever need to change the OperationContext, that can be done
  * without the overhead of creating a new DBDirectClient by calling setOpCtx(), after which all
  * operations will use the new OperationContext.
- */
+ */ 
+//实例内部构造一个client类型，参考fetchActiveTransactionHistory
 class DBDirectClient : public DBClientBase {
 public:
     DBDirectClient(OperationContext* opCtx);

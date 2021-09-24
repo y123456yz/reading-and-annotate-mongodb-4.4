@@ -4677,11 +4677,13 @@ std::set<OpTimeAndWallTime> ReplicationCoordinatorImpl::getStableOpTimeCandidate
     return _stableOpTimeCandidates;
 }
 
+//LocalOplogInfo::getNextOpTimes
 void ReplicationCoordinatorImpl::attemptToAdvanceStableTimestamp() {
     stdx::unique_lock<Latch> lk(_mutex);
     _setStableTimestampForStorage(lk);
 }
 
+//ReplicationCoordinatorImpl::_setStableTimestampForStorage
 boost::optional<OpTimeAndWallTime> ReplicationCoordinatorImpl::_recalculateStableOpTime(
     WithLock lk) {
     auto commitPoint = _topCoord->getLastCommittedOpTimeAndWallTime();
@@ -4711,13 +4713,14 @@ boost::optional<OpTimeAndWallTime> ReplicationCoordinatorImpl::_recalculateStabl
 }
 
 MONGO_FAIL_POINT_DEFINE(disableSnapshotting);
-
+//ReplicationCoordinatorImpl::attemptToAdvanceStableTimestamp()
 void ReplicationCoordinatorImpl::_setStableTimestampForStorage(WithLock lk) {
     if (!_shouldSetStableTimestamp) {
         LOGV2_DEBUG(21395, 2, "Not setting stable timestamp for storage");
         return;
     }
     // Get the current stable optime.
+   
     auto stableOpTime = _recalculateStableOpTime(lk);
 
     // If there is a valid stable optime, set it for the storage engine, and then remove any

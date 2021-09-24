@@ -473,6 +473,7 @@ Status CollectionImpl::insertDocumentsForOplog(OperationContext* opCtx,
 }
 
 
+//insertBatchAndHandleErrors->insertDocuments->CollectionImpl::insertDocuments
 Status CollectionImpl::insertDocuments(OperationContext* opCtx,
                                        const std::vector<InsertStatement>::const_iterator begin,
                                        const std::vector<InsertStatement>::const_iterator end,
@@ -483,6 +484,10 @@ Status CollectionImpl::insertDocuments(OperationContext* opCtx,
     if (!status.isOK()) {
         return status;
     }
+
+	LOGV2_DEBUG(122418,
+        3,
+        "yang test .......CollectionImpl::insertDocuments begin x");
 
     // Should really be done in the collection object at creation and updated on index create.
     const bool hasIdIndex = _indexCatalog->findIdIndex(opCtx);
@@ -499,15 +504,33 @@ Status CollectionImpl::insertDocuments(OperationContext* opCtx,
         if (!status.isOK())
             return status;
     }
+	/* 
+	mongodb对某一行的写操作，会产生三个动作
+	
+	1 对wt层的数据段b+ tree（上图中的Data Ident）执行写操作
+	2 对wt层索引段的每个索引b+ tree执行写操作
+	3 对oplog表执行写操作
+	*/
 
+	
+
+	LOGV2_DEBUG(122418,
+        3,
+        "yang test .......CollectionImpl::insertDocuments begin xx");
     const SnapshotId sid = opCtx->recoveryUnit()->getSnapshotId();
 
+	//插入wiredtiger  1  2步骤
     status = _insertDocuments(opCtx, begin, end, opDebug);
     if (!status.isOK()) {
         return status;
     }
     invariant(sid == opCtx->recoveryUnit()->getSnapshotId());
+	
+	LOGV2_DEBUG(122419,
+        3,
+        "yang test .......CollectionImpl::insertDocuments begin 2");
 
+	//OpObserverImpl::onInserts   oplog写入oplog.rs表中
     getGlobalServiceContext()->getOpObserver()->onInserts(
         opCtx, ns(), uuid(), begin, end, fromMigrate);
 
@@ -539,7 +562,10 @@ Status CollectionImpl::insertDocuments(OperationContext* opCtx,
                  (begin != end && firstIdElem.type() == mongo::String &&
                   begin->doc["_id"].str() == firstIdElem.str()));
         });
-
+		
+	LOGV2_DEBUG(122428,
+        3,
+        "yang test .......CollectionImpl::insertDocuments end");
     return Status::OK();
 }
 
@@ -605,6 +631,7 @@ Status CollectionImpl::insertDocumentForBulkLoader(OperationContext* opCtx,
     return loc.getStatus();
 }
 
+//insertBatchAndHandleErrors->insertDocuments->CollectionImpl::insertDocuments
 Status CollectionImpl::_insertDocuments(OperationContext* opCtx,
                                         const std::vector<InsertStatement>::const_iterator begin,
                                         const std::vector<InsertStatement>::const_iterator end,
@@ -638,6 +665,31 @@ Status CollectionImpl::_insertDocuments(OperationContext* opCtx,
         records.emplace_back(Record{RecordId(), RecordData(it->doc.objdata(), it->doc.objsize())});
         timestamps.emplace_back(it->oplogSlot.getTimestamp());
     }
+	/*
+		比如，往某个集合插入一组元素
+		db.coll.insert({_id: "apple", count: 100});
+		db.coll.insert({_id: "peach", count: 200});
+		db.coll.insert({_id: "grape", count: 300});
+
+		对应一个coll的数据集合，其对应的WT数据类似于KEY	VALUE
+		1	{_id: “apple”, count: 100}
+		2	{_id: “peach”, count: 200}
+		3	{_id; “grape”, count: 300}
+
+		以及基于id的索引集合，其对应的WT数据类似于KEY	VALUE
+		“apple”	1    //1对应数据集合中的{_id: “apple”, count: 100}
+		“peach”	2
+		“grape”	3
+
+		接下来如果在count上建索引，索引会存储在新的WT table里，数据类似于db.coll.ensureIndex({count: -1})KEY	VALUE
+		300	3    //3对应数据集合中的{_id; “grape”, count: 300}
+		200	2
+		100	1
+
+		https://blog.csdn.net/zhuangtim1987/article/details/53431339?utm_source=copy 
+	*/
+	//普通写入在这里，其他索引写入在后面的_indexCatalog.indexRecords
+	//WiredTigerRecordStore::_insertRecords
     Status status = _recordStore->insertRecords(opCtx, &records, timestamps);
     if (!status.isOK())
         return status;
@@ -654,7 +706,9 @@ Status CollectionImpl::_insertDocuments(OperationContext* opCtx,
         bsonRecords.push_back(bsonRecord);
     }
 
+	//写索引插入走这里
     int64_t keysInserted;
+	//IndexCatalogImpl::indexRecords
     status = _indexCatalog->indexRecords(opCtx, bsonRecords, &keysInserted);
     if (opDebug) {
         opDebug->additiveMetrics.incrementKeysInserted(keysInserted);

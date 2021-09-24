@@ -108,6 +108,9 @@ void killSessionTokens(OperationContext* opCtx,
         });
 }
 
+
+//MongoDSessionCatalog::invalidateAllSessions    observeDirectWriteToConfigTransactions中调用
+//不允许对config表进行增删改操作
 void disallowDirectWritesUnderSession(OperationContext* opCtx) {
     const auto replCoord = repl::ReplicationCoordinator::get(opCtx);
     bool isReplSet = replCoord->getReplicationMode() == repl::ReplicationCoordinator::modeReplSet;
@@ -282,6 +285,7 @@ boost::optional<UUID> MongoDSessionCatalog::getTransactionTableUUID(OperationCon
     return coll->uuid();
 }
 
+//OpObserverImpl::onInserts等增删改操作，不能对transaction表进行修改
 void MongoDSessionCatalog::observeDirectWriteToConfigTransactions(OperationContext* opCtx,
                                                                   BSONObj singleSessionDoc) {
     disallowDirectWritesUnderSession(opCtx);

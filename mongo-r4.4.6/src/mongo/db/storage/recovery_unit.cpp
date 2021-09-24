@@ -46,10 +46,13 @@ AtomicWord<unsigned long long> nextSnapshotId{1};
 MONGO_FAIL_POINT_DEFINE(widenWUOWChangesWindow);
 }  // namespace
 
+//实际上是个全局的id，WriteUnitOfWork wuow1(opCtx);每构造一个新的wuow则自增
 RecoveryUnit::RecoveryUnit() {
     assignNextSnapshotId();
 }
 
+//RecoveryUnit::RecoveryUnit()  注意这个是全局的，只要构造一个 
+//实际上是个全局的id，WriteUnitOfWork wuow1(opCtx);每构造一个新的wuow则自增
 void RecoveryUnit::assignNextSnapshotId() {
     _mySnapshotId = nextSnapshotId.fetchAndAdd(1);
 }

@@ -567,9 +567,11 @@ void invokeWithSessionCheckedOut(OperationContext* opCtx,
     if (!opCtx->getClient()->isInDirectClient()) {
         bool beganOrContinuedTxn{false};
         // This loop allows new transactions on a session to block behind a previous prepared
-        // transaction on that session.
+        // transaction on that session. 这个循环允许会话上的新事务阻塞在该会话上的前一个准备好的事务之后。
         while (!beganOrContinuedTxn) {
             try {
+				//session.startTransaction()对应请求参数:"txnNumber":0,"autocommit":false,"stmtId":0,"startTransaction":true,
+				//TransactionParticipant::beginOrContinue
                 txnParticipant.beginOrContinue(opCtx,
                                                *sessionOptions.getTxnNumber(),
                                                sessionOptions.getAutocommit(),
@@ -599,6 +601,7 @@ void invokeWithSessionCheckedOut(OperationContext* opCtx,
         if (sessionOptions.getStartTransaction()) {
             // If this shard has been selected as the coordinator, set up the coordinator state
             // to be ready to receive votes.
+            //OperationSessionInfoFromClient::getCoordinator  session.startTransaction()默认不会携带该信息
             if (sessionOptions.getCoordinator() == boost::optional<bool>(true)) {
                 createTransactionCoordinator(opCtx, *sessionOptions.getTxnNumber());
             }
@@ -717,6 +720,7 @@ bool runCommandImpl(OperationContext* opCtx,
     const auto isInternalClient = opCtx->getClient()->session() &&
         (opCtx->getClient()->session()->getTags() & transport::Session::kInternalClient);
 
+	//请求中携带有txnNumber，则需要做会话检查。session.startTransaction()开始到事务中的操作处理，都是通过这里开始
     const bool shouldCheckOutSession =
         sessionOptions.getTxnNumber() && !shouldCommandSkipSessionCheckout(command->getName());
 
@@ -823,7 +827,7 @@ bool runCommandImpl(OperationContext* opCtx,
                 errorBuilder.append("code", errorCode);
                 errorBuilder.append("errmsg", "failWithErrorCodeInRunCommand enabled.");
                 replyBuilder->setCommandReply(errorBuilder.obj());
-            } else if (shouldCheckOutSession) {
+            } else if (shouldCheckOutSession) {//session.startTransaction()开始到事务中的操作处理，都是通过这里开始
                 invokeWithSessionCheckedOut(
                     opCtx, request, invocation, sessionOptions, replyBuilder);
             } else {

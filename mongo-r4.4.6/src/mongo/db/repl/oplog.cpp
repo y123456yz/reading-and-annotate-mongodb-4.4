@@ -266,7 +266,7 @@ void createIndexForApplyOps(OperationContext* opCtx,
  * finalOpTime - the OpTime of the last oplog record.
  * wallTime - the wall clock time of the last oplog record.
  */
-//写oplog,logOp调用
+//写oplog,  logOp  logInsertOps调用
 void _logOpsInner(OperationContext* opCtx,
                   const NamespaceString& nss,
                   std::vector<Record>* records,
@@ -381,6 +381,8 @@ OpTime logOp(OperationContext* opCtx, MutableOplogEntry* oplogEntry) {
     return slot;
 }
 
+//insert操作对应oplog 
+//insertDocuments->CollectionImpl::insertDocuments->OpObserverImpl::onInserts
 std::vector<OpTime> logInsertOps(OperationContext* opCtx,
                                  MutableOplogEntry* oplogEntryTemplate,
                                  std::vector<InsertStatement>::const_iterator begin,
@@ -404,7 +406,9 @@ std::vector<OpTime> logInsertOps(OperationContext* opCtx,
     AutoGetOplog oplogWrite(opCtx, OplogAccessMode::kLogOp);
     auto oplogInfo = oplogWrite.getOplogInfo();
 
-    WriteUnitOfWork wuow(opCtx);
+	//注意在外层的insertDocuments也有该WriteUnitOfWork封装，这里重新进行一个新的WriteUnitOfWork封装，但是他们的_opCtx是同一个
+	//区别:本次的wuow中的_toplevel=false，只会影响LockerImpl::beginWriteUnitOfWork()相关的锁统计
+	WriteUnitOfWork wuow(opCtx);
 
     std::vector<OpTime> opTimes(count);
     std::vector<Timestamp> timestamps(count);
@@ -624,7 +628,9 @@ void createOplog(OperationContext* opCtx) {
     createOplog(opCtx, LocalOplogInfo::get(opCtx)->getOplogCollectionName(), isReplSet);
 }
 
+//insertDocuments中调用  
 std::vector<OplogSlot> getNextOpTimes(OperationContext* opCtx, std::size_t count) {
+	//LocalOplogInfo::getNextOpTimes
     return LocalOplogInfo::get(opCtx)->getNextOpTimes(opCtx, count);
 }
 

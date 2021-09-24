@@ -153,6 +153,8 @@ BSONObj makeOplogEntryDoc(OpTime opTime,
 
 const int MutableOplogEntry::kOplogVersion = 2;
 
+
+//OpObserverImpl::onInsertsÖÐµ÷ÓÃ
 // Static
 ReplOperation MutableOplogEntry::makeInsertOperation(const NamespaceString& nss,
                                                      UUID uuid,

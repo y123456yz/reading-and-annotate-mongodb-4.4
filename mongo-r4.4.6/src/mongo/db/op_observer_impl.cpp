@@ -105,6 +105,8 @@ repl::OpTime logOperation(OperationContext* opCtx, MutableOplogEntry* oplogEntry
  * second time for the actual write to the transactions table. Since this write does not generate an
  * oplog entry, the recursion will stop at this point.
  */
+//OpObserverImpl::onInserts  OpObserverImpl::onUpdate  OpObserverImpl::onDelete  
+//logApplyOpsForTransaction  logCommitOrAbortForPreparedTransaction
 void onWriteOpCompleted(OperationContext* opCtx,
                         std::vector<StmtId> stmtIdsWritten,
                         SessionTxnRecord sessionTxnRecord) {
@@ -389,6 +391,17 @@ void OpObserverImpl::onAbortIndexBuild(OperationContext* opCtx,
     logOperation(opCtx, &oplogEntry);
 }
 
+/*  
+test_auth_repl_4.4.6:PRIMARY> db.test21.insert({name:"yangyazhou33"})
+WriteResult({ "nInserted" : 1 })
+test_auth_repl_4.4.6:PRIMARY> use local
+switched to db local
+test_auth_repl_4.4.6:PRIMARY> db.oplog.rs.find().sort({"ts":-1}).limit(1)
+{ "op" : "i", "ns" : "test.test21", "ui" : UUID("0ad47cf6-13ad-4f96-850a-f8bcf761a8cb"), "o" : { "_id" : ObjectId("614d909509478861a8e1c7df"), "name" : "yangyazhou33" }, "ts" : Timestamp(1632473237, 2), "t" : NumberLong(52), "wall" : ISODate("2021-09-24T08:47:17.288Z"), "v" : NumberLong(2) }
+*/
+//CollectionImpl::insertDocuments中调用写oplog
+
+//CollectionImpl::insertDocuments->OpObserverImpl::onInserts
 void OpObserverImpl::onInserts(OperationContext* opCtx,
                                const NamespaceString& nss,
                                OptionalCollectionUUID uuid,
@@ -404,7 +417,7 @@ void OpObserverImpl::onInserts(OperationContext* opCtx,
     std::vector<repl::OpTime> opTimeList;
     repl::OpTime lastOpTime;
 
-    if (inMultiDocumentTransaction) {
+    if (inMultiDocumentTransaction) { //多文档事务走这里  //注意事务未提交时候的oplog暂时只在内存中
         // Do not add writes to the profile collection to the list of transaction operations, since
         // these are done outside the transaction. There is no top-level WriteUnitOfWork when we are
         // in a SideTransactionBlock.
@@ -413,12 +426,13 @@ void OpObserverImpl::onInserts(OperationContext* opCtx,
             return;
         }
 
+		//注意事务未提交时候的oplog暂时只在内存中
         for (auto iter = first; iter != last; iter++) {
 			//oplog记录到事务内存中 
             auto operation = MutableOplogEntry::makeInsertOperation(nss, uuid.get(), iter->doc);
             txnParticipant.addTransactionOperation(opCtx, operation);
         }
-    } else {
+    } else {//普通写操作走这里
         MutableOplogEntry oplogEntryTemplate;
         oplogEntryTemplate.setNss(nss);
         oplogEntryTemplate.setUuid(uuid);
@@ -555,6 +569,7 @@ void OpObserverImpl::aboutToDelete(OperationContext* opCtx,
 
     shardObserveAboutToDelete(opCtx, nss, doc);
 }
+
 
 void OpObserverImpl::onDelete(OperationContext* opCtx,
                               const NamespaceString& nss,
@@ -916,7 +931,7 @@ std::vector<repl::ReplOperation>::iterator packTransactionStatementsForApplyOps(
 // Returns the optime of the written oplog entry.
 
 //logOplogEntriesForTransaction中调用
-//事务日志记录
+//事务日志记录  
 OpTimeBundle logApplyOpsForTransaction(OperationContext* opCtx,
                                        MutableOplogEntry* oplogEntry,
                                        boost::optional<DurableTxnStateEnum> txnState,

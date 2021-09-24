@@ -51,6 +51,8 @@ class OperationContext;
 class OperationSessionInfo;
 class Session;
 
+//oplog相关的时间管理，参考LocalOplogInfo::getNextOpTimes
+//oplog记录的时间戳管理，确保每一个些操作的oplog时间不一样
 using OplogSlot = repl::OpTime;
 
 struct InsertStatement {
@@ -65,6 +67,7 @@ public:
         : oplogSlot(repl::OpTime(ts, term)), doc(toInsert) {}
 
     StmtId stmtId = kUninitializedStmtId;
+    //每个操作对应的时间ts存到这里
     OplogSlot oplogSlot;
     BSONObj doc;
 };

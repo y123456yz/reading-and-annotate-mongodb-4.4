@@ -137,6 +137,7 @@ public:
      * Resets the SingleTransactionStats object stored in this TransactionMetricsObserver instance,
      * preparing it for the new transaction or retryable write with the given number.
      */
+    //Participant::_setNewTxnNumber
     void resetSingleTransactionStats(TxnNumber txnNumber) {
         _singleTransactionStats = SingleTransactionStats(txnNumber);
     }
@@ -165,6 +166,7 @@ private:
                           Top* top);
 
     // Tracks metrics for a single multi-document transaction.
+    //Participant::_setNewTxnNumber
     SingleTransactionStats _singleTransactionStats;
 };
 

@@ -1457,6 +1457,7 @@ void WiredTigerRecordStore::reclaimOplog(OperationContext* opCtx, Timestamp mayT
           "duration"_attr = Milliseconds(elapsedMillis));
 }
 
+//CollectionImpl::_insertDocuments
 Status WiredTigerRecordStore::insertRecords(OperationContext* opCtx,
                                             std::vector<Record>* records,
                                             const std::vector<Timestamp>& timestamps) {
@@ -1518,11 +1519,20 @@ Status WiredTigerRecordStore::_insertRecords(OperationContext* opCtx,
             ts = timestamps[i];
         }
         if (!ts.isNull()) {
+			//WiredTigerRecoveryUnit::setTimestamp
             LOGV2_DEBUG(22403, 4, "inserting record with timestamp {ts}", "ts"_attr = ts);
             fassert(39001, opCtx->recoveryUnit()->setTimestamp(ts));
         }
         setKey(c, record.id);
         WiredTigerItem value(record.data.data(), record.data.size());
+		LOGV2_DEBUG(122416,
+            3,
+            "yang test .......WiredTigerRecordStore::_insertRecords ",
+			" _uri:"_attr = _uri,                
+			" key:"_attr = record.id,
+			" value:"_attr = redact(record.data.toBson()));
+
+		//log() << "yang test ...WiredTigerRecordStore::_insertRecords . _uri:" << _uri <<" key:" << record.id << " value:" << redact(record.data.toBson());
         c->set_value(c, value.Get());
         int ret = WT_OP_CHECK(c->insert(c));
         if (ret)
@@ -2119,15 +2129,18 @@ void WiredTigerRecordStore::cappedTruncateAfter(OperationContext* opCtx,
     }
 }
 
+//LocalOplogInfo::getNextOpTimes中调用
 Status WiredTigerRecordStore::oplogDiskLocRegister(OperationContext* opCtx,
                                                    const Timestamp& ts,
                                                    bool orderedCommit) {
+    //wiredTiger_recovery_unit.h中的setOrderedCommit
     opCtx->recoveryUnit()->setOrderedCommit(orderedCommit);
 
     if (!orderedCommit) {
         // This labels the current transaction with a timestamp.
         // This is required for oplog visibility to work correctly, as WiredTiger uses the
         // transaction list to determine where there are holes in the oplog.
+        //WiredTigerRecoveryUnit::setTimestamp
         return opCtx->recoveryUnit()->setTimestamp(ts);
     }
 

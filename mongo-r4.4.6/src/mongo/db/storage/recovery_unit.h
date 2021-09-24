@@ -119,9 +119,27 @@ RecoveryUnit::_txnClose封装了WT层的commit_transaction和rollback_transaction。
 //OperationContext::_recoveryUnit为RecoveryUnit类类型, WiredTigerRecoveryUnit继承该类
 //WiredTigerRecoveryUnit和biggie::RecoveryUnit继承该类
 
+
 //注意WriteUnitOfWork和RecoveryUnit的关系，WriteUnitOfWork的相关接口最终都会调用RecoveryUnit接口
 //OperationContext._recoveryUnit  OperationContext._writeUnitOfWork分别对应RecoveryUnit和WriteUnitOfWork
 
+/*
+insertDocuments {
+    WriteUnitOfWork wuow1(opCtx);
+    ...
+    CollectionImpl::insertDocuments->OpObserverImpl::onInserts
+    {
+        WriteUnitOfWork wuow2(opCtx);
+        ...
+        wuow2.commit();
+    }
+    ...
+    wuow1.commit(); 
+}
+
+wuow1和wuow2的_opCtx是一样的，所以对应的_opCtx->recoveryUnit()也是同一个
+
+*/
 
 //StorageEngineImpl::newRecoveryUnit()中会构造新的recoveryUnit
 class RecoveryUnit {
@@ -532,8 +550,9 @@ public:
      * Registers a callback to be called if the current WriteUnitOfWork rolls back.
      *
      * Be careful about the lifetimes of all variables captured by the callback!
-     */
+     */ 
     template <typename Callback>
+    //注册callback，真正执行在WiredTigerRecoveryUnit::_commit()
     void onRollback(Callback callback) {
         class OnRollbackChange final : public Change {
         public:
@@ -546,7 +565,7 @@ public:
         private:
             Callback _callback;
         };
-
+        
         registerChange(std::make_unique<OnRollbackChange>(std::move(callback)));
     }
 
@@ -706,6 +725,8 @@ private:
     typedef std::vector<std::unique_ptr<Change>> Changes;
     Changes _changes;
     State _state = State::kInactive;
+
+    //实际上是个全局的id，WriteUnitOfWork wuow1(opCtx);每构造一个新的wuow则自增
     uint64_t _mySnapshotId;
 };
 

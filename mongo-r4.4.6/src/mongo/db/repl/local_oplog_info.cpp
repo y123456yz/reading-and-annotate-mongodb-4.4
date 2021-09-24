@@ -101,6 +101,9 @@ void LocalOplogInfo::setNewTimestamp(ServiceContext* service, const Timestamp& n
     LogicalClock::get(service)->setClusterTimeFromTrustedSource(LogicalTime(newTime));
 }
 
+//insertDocuments->oplog.cpp中的getNextOpTimes->LocalOplogInfo::getNextOpTimes
+
+////oplog.cpp中的getNextOpTimes调用, 获取oplog对应的ts
 std::vector<OplogSlot> LocalOplogInfo::getNextOpTimes(OperationContext* opCtx, std::size_t count) {
     auto replCoord = ReplicationCoordinator::get(opCtx);
     long long term = OpTime::kUninitializedTerm;
@@ -108,6 +111,7 @@ std::vector<OplogSlot> LocalOplogInfo::getNextOpTimes(OperationContext* opCtx, s
     // Fetch term out of the newOpMutex.
     if (replCoord->getReplicationMode() == ReplicationCoordinator::modeReplSet) {
         // Current term. If we're not a replset of pv=1, it remains kOldProtocolVersionTerm.
+        //ReplicationCoordinatorImpl::getTerm()
         term = replCoord->getTerm();
     }
 
@@ -121,6 +125,7 @@ std::vector<OplogSlot> LocalOplogInfo::getNextOpTimes(OperationContext* opCtx, s
     });
 
     // Allow the storage engine to start the transaction outside the critical section.
+    //WiredTigerRecoveryUnit::preallocateSnapshot()  //事务begin_transaction封装
     opCtx->recoveryUnit()->preallocateSnapshot();
     {
         stdx::lock_guard<Latch> lk(_newOpMutex);
@@ -132,8 +137,10 @@ std::vector<OplogSlot> LocalOplogInfo::getNextOpTimes(OperationContext* opCtx, s
         // We can't establish it here because that would require locking the local database, which
         // would be a lock order violation.
         invariant(_oplog);
+		//WiredTigerRecordStore::oplogDiskLocRegister
         fassert(28560, _oplog->getRecordStore()->oplogDiskLocRegister(opCtx, ts, orderedCommit));
     }
+	//oplog记录的时间戳管理，确保每一个些操作的oplog时间不一样
     std::vector<OplogSlot> oplogSlots(count);
     for (std::size_t i = 0; i < count; i++) {
         oplogSlots[i] = {Timestamp(ts.asULL() + i), term};
@@ -142,7 +149,9 @@ std::vector<OplogSlot> LocalOplogInfo::getNextOpTimes(OperationContext* opCtx, s
     // If we abort a transaction that has reserved an optime, we should make sure to update the
     // stable timestamp if necessary, since this oplog hole may have been holding back the stable
     // timestamp.
+    //注册callback，真正执行在WiredTigerRecoveryUnit::_commit()
     opCtx->recoveryUnit()->onRollback(
+    	//ReplicationCoordinatorImpl::attemptToAdvanceStableTimestamp()
         [replCoord]() { replCoord->attemptToAdvanceStableTimestamp(); });
 
     return oplogSlots;

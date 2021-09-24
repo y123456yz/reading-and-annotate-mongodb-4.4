@@ -50,6 +50,7 @@ namespace repl {
  * label every op in an oplog with a unique identifier.
  */
 
+//using OplogSlot = repl::OpTime; 中定义使用
 class OpTime {
 public:
     static const char kTimestampFieldName[];

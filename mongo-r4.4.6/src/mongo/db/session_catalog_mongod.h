@@ -82,6 +82,7 @@ public:
  * it for later access by the command. The session is installed at construction time and is removed
  * at destruction.
  */
+//可以参考invokeWithSessionCheckedOut使用
 class MongoDOperationContextSession {
 public:
     MongoDOperationContextSession(OperationContext* opCtx);

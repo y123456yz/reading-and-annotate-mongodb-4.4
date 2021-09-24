@@ -116,6 +116,7 @@ void fassertOnRepeatedExecution(const LogicalSessionId& lsid,
         "secondCommitOpTime"_attr = secondOpTime);
 }
 
+//下面的fetchActiveTransactionHistory中生效
 struct ActiveTransactionHistory {
     boost::optional<SessionTxnRecord> lastTxnRecord;
 	
@@ -141,7 +142,7 @@ ActiveTransactionHistory fetchActiveTransactionHistory(OperationContext* opCtx,
         auto result =
             client.findOne(NamespaceString::kSessionTransactionsTableNamespace.ns(),
                            {BSON(SessionTxnRecord::kSessionIdFieldName << lsid.toBSON())});
-        if (result.isEmpty()) {
+        if (result.isEmpty()) {//config.transactions表中没有该lsid对应的记录
             return boost::none;
         }
 
@@ -346,6 +347,7 @@ void TransactionParticipant::performNoopWrite(OperationContext* opCtx, StringDat
     }
 }
 
+//fetchActiveTransactionHistory    getOldestActiveTimestamp中调用
 StorageEngine::OldestActiveTransactionTimestampResult
 TransactionParticipant::getOldestActiveTimestamp(Timestamp stableTimestamp) {
     // Read from config.transactions at the stable timestamp for the oldest active transaction
@@ -416,7 +418,7 @@ const LogicalSessionId& TransactionParticipant::Observer::_sessionId() const {
 //TransactionParticipant::Participant::beginOrContinue
 void TransactionParticipant::Participant::_beginOrContinueRetryableWrite(OperationContext* opCtx,
                                                                          TxnNumber txnNumber) {
-    if (txnNumber > o().activeTxnNumber) {
+    if (txnNumber > o().activeTxnNumber) { //activeTxnNumber默认取值kUninitializedTxnNumber为-1
         // New retryable write.
         _setNewTxnNumber(opCtx, txnNumber);
         p().autoCommit = boost::none;
@@ -461,6 +463,8 @@ void TransactionParticipant::Participant::_continueMultiDocumentTransaction(Oper
     return;
 }
 
+////runCommandImpl->invokeWithSessionCheckedOut->Participant::beginOrContinue
+//session.startTransaction()后的多文档操作会走该流程
 void TransactionParticipant::Participant::_beginMultiDocumentTransaction(OperationContext* opCtx,
                                                                          TxnNumber txnNumber) {
     // Aborts any in-progress txns.
@@ -489,7 +493,8 @@ void TransactionParticipant::Participant::_beginMultiDocumentTransaction(Operati
     invariant(p().transactionOperations.empty());
 }
 
-//CoordinateCommitTransactionCmd::typedRun  
+//session.startTransaction()对应请求参数:"txnNumber":0,"autocommit":false,"stmtId":0,"startTransaction":true,
+//CoordinateCommitTransactionCmd::typedRun    
 //runCommandImpl->invokeWithSessionCheckedOut  session.startTransaction()后的多文档操作会走该流程
 void TransactionParticipant::Participant::beginOrContinue(OperationContext* opCtx,
                                                           TxnNumber txnNumber,
@@ -499,6 +504,7 @@ void TransactionParticipant::Participant::beginOrContinue(OperationContext* opCt
     // method, as we otherwise risk stepping down in the interim and incorrectly updating the
     // transaction number, which can abort active transactions.
     repl::ReplicationStateTransitionLockGuard rstl(opCtx, MODE_IX);
+	//事务操作必须有主节点存在，并且writeConcernMajorityJournalDefault必须启用
     if (opCtx->writesAreReplicated()) {
         auto replCoord = repl::ReplicationCoordinator::get(opCtx);
         uassert(ErrorCodes::NotWritablePrimary,
@@ -515,6 +521,7 @@ void TransactionParticipant::Participant::beginOrContinue(OperationContext* opCt
                     getTestCommandsEnabled());
     }
 
+	//对txnNumber进行检查，后面的事务txn number必须比前面的大
     if (txnNumber < o().activeTxnNumber) {
         const std::string currOperation =
             o().txnState.isInRetryableWriteMode() ? "retryable write" : "transaction";
@@ -980,6 +987,7 @@ void TransactionParticipant::Participant::_releaseTransactionResourcesToOpCtx(
     releaseOnError.dismiss();
 }
 
+//invokeWithSessionCheckedOut
 void TransactionParticipant::Participant::unstashTransactionResources(OperationContext* opCtx,
                                                                       const std::string& cmdName) {
     invariant(!opCtx->getClient()->isInDirectClient());
@@ -2299,6 +2307,7 @@ void TransactionParticipant::Participant::_setNewTxnNumber(OperationContext* opC
         "lsid"_attr = _sessionId().getId());
 
     // Abort the existing transaction if it's not prepared, committed, or aborted.
+    //例如同时执行两次session.startTransaction()，则第二次的时候需要abort处理
     if (o().txnState.isInProgress()) {
         _abortTransactionOnSession(opCtx);
     }
@@ -2322,9 +2331,10 @@ void TransactionParticipant::Participant::refreshFromStorageIfNeeded(OperationCo
     invariant(!opCtx->getClient()->isInDirectClient());
     invariant(!opCtx->lockState()->isLocked());
 
-    if (p().isValid)
+    if (p().isValid) //该函数下面的refreshFromStorageIfNeeded中赋值为true
         return;
 
+	//_sessionId()对应LogicalSessionId，也就是lsid
     auto activeTxnHistory = fetchActiveTransactionHistory(opCtx, _sessionId());
     const auto& lastTxnRecord = activeTxnHistory.lastTxnRecord;
     if (lastTxnRecord) {
@@ -2363,6 +2373,7 @@ void TransactionParticipant::Participant::refreshFromStorageIfNeeded(OperationCo
     p().isValid = true;
 }
 
+//onWriteOpCompleted调用
 void TransactionParticipant::Participant::onWriteOpCompletedOnPrimary(
     OperationContext* opCtx,
     std::vector<StmtId> stmtIdsWritten,

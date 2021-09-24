@@ -427,7 +427,7 @@ bool LockerImpl::unlockGlobal() {
 
 //LockerImpl::restoreWriteUnitOfWorkAndLock 和 WriteUnitOfWork::WriteUnitOfWork调用
 void LockerImpl::beginWriteUnitOfWork() {
-    _wuowNestingLevel++;
+    _wuowNestingLevel++;  //配合下面的releaseWriteUnitOfWorkAndUnlock  restoreWriteUnitOfWorkAndLock等接口走读
 }
 
 //WriteUnitOfWork::~WriteUnitOfWork()
@@ -489,6 +489,7 @@ void LockerImpl::restoreWriteUnitOfWork(const WUOWLockSnapshot& stateToRestore) 
     _wuowNestingLevel = stateToRestore.wuowNestingLevel;
 }
 
+//TxnResources::TxnResources
 bool LockerImpl::releaseWriteUnitOfWorkAndUnlock(LockSnapshot* stateOut) {
     // Only the global WUOW can be released, since we never need to release and restore
     // nested WUOW's. Thus we don't have to remember the nesting level.
@@ -508,6 +509,7 @@ bool LockerImpl::releaseWriteUnitOfWorkAndUnlock(LockSnapshot* stateOut) {
     return saveLockStateAndUnlock(stateOut);
 }
 
+//TxnResources::release
 void LockerImpl::restoreWriteUnitOfWorkAndLock(OperationContext* opCtx,
                                                const LockSnapshot& stateToRestore) {
     if (stateToRestore.globalMode != MODE_NONE) {
