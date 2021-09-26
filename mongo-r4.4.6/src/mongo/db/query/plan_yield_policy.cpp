@@ -179,6 +179,8 @@ void PlanYieldPolicy::_yieldAllLocks(OperationContext* opCtx,
 
     // Top-level locks are freed, release any potential low-level (storage engine-specific
     // locks). If we are yielding, we are at a safe place to do so.
+    //AutoYield的过程中，会通过opCtx->recoveryUnit()->abandonSnapshot()释放掉执行计划中的Snapshot。
+    //参考https://mongoing.com/archives/5476
     opCtx->recoveryUnit()->abandonSnapshot();
 
     // Track the number of yields in CurOp.

@@ -56,6 +56,8 @@ WiredTigerSession::WiredTigerSession(WT_CONNECTION* conn, uint64_t epoch, uint64
       _cursorGen(0),
       _cursorsOut(0),
       _idleExpireTime(Date_t::min()) {
+    //Ä¬ÈÏÊ¹ÓÃWiredTigerÌá¹©µÄSnapshotIsolation¸ôÀë¼¶±ð¡
+    //¿ÉÒÔ²Î¿¼https://mongoing.com/archives/5476
     invariantWTOK(conn->open_session(conn, nullptr, "isolation=snapshot", &_session));
 }
 
@@ -238,6 +240,9 @@ bool WiredTigerSessionCache::isShuttingDown() {
     return _shuttingDown.load() & kShuttingDownMask;
 }
 
+
+// Flushes the journal log to disk. Checkpoints all data if journaling is disabled.
+//WiredTigerRecoveryUnit::waitUntilDurableµ÷ÓÃ£¬³Ö¾Ã»¯´¦Àí
 void WiredTigerSessionCache::waitUntilDurable(OperationContext* opCtx,
                                               Fsync syncType,
                                               UseJournalListener useListener) {

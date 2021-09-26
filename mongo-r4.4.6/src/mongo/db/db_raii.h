@@ -126,7 +126,7 @@ public:
 private:
     // If this field is set, the reader will not take the ParallelBatchWriterMode lock and conflict
     // with secondary batch application. This stays in scope with the _autoColl so that locks are
-    // taken and released in the right order.
+    // taken and released in the right order. 
     boost::optional<ShouldNotConflictWithSecondaryBatchApplicationBlock>
         _shouldNotConflictWithSecondaryBatchApplicationBlock;
 

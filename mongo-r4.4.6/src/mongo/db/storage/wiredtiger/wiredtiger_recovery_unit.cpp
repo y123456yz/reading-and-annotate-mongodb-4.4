@@ -174,7 +174,8 @@ WiredTigerRecoveryUnit::~WiredTigerRecoveryUnit() {
     _abort();
 }
 
-//WiredTigerRecoveryUnit::doCommitUnitOfWork()
+//WiredTigerRecoveryUnit::doCommitUnitOfWork() 
+//事务提交
 void WiredTigerRecoveryUnit::_commit() {
     // Since we cannot have both a _lastTimestampSet and a _commitTimestamp, we set the
     // commit time as whichever is non-empty. If both are empty, then _lastTimestampSet will
@@ -183,6 +184,7 @@ void WiredTigerRecoveryUnit::_commit() {
 
     bool notifyDone = !_prepareTimestamp.isNull();
     if (_session && _isActive()) {
+		//事务提交
         _txnClose(true);
     }
     _setState(State::kCommitting);
@@ -199,7 +201,7 @@ void WiredTigerRecoveryUnit::_commit() {
     _setState(State::kInactive);
 }
 
-
+//事务回滚
 void WiredTigerRecoveryUnit::_abort() {
     bool notifyDone = !_prepareTimestamp.isNull();
     if (_session && _isActive()) {
@@ -244,11 +246,13 @@ void WiredTigerRecoveryUnit::prepareUnitOfWork() {
 }
 
 //WriteUnitOfWork::commit()->RecoveryUnit::commitUnitOfWork->WiredTigerRecoveryUnit::doCommitUnitOfWork()调用
+//事务提交
 void WiredTigerRecoveryUnit::doCommitUnitOfWork() {
     invariant(_inUnitOfWork(), toString(_getState()));
     _commit();
 }
 
+//事务回滚
 void WiredTigerRecoveryUnit::doAbortUnitOfWork() {
     invariant(_inUnitOfWork(), toString(_getState()));
     _abort();
@@ -260,11 +264,13 @@ void WiredTigerRecoveryUnit::_ensureSession() {
     }
 }
 
+//持久化
 bool WiredTigerRecoveryUnit::waitUntilDurable(OperationContext* opCtx) {
     invariant(!_inUnitOfWork(), toString(_getState()));
     invariant(!opCtx->lockState()->isLocked() || storageGlobalParams.repair);
 
     // Flushes the journal log to disk. Checkpoints all data if journaling is disabled.
+    //WiredTigerSessionCache::waitUntilDurable  
     _sessionCache->waitUntilDurable(opCtx,
                                     WiredTigerSessionCache::Fsync::kJournal,
                                     WiredTigerSessionCache::UseJournalListener::kUpdate);
@@ -332,7 +338,7 @@ WiredTigerSession* WiredTigerRecoveryUnit::getSessionNoTxn() {
     return session;
 }
 
-
+//recover_unit.h中的abandonSnapshot()调用
 void WiredTigerRecoveryUnit::doAbandonSnapshot() {
     invariant(!_inUnitOfWork(), toString(_getState()));
     if (_isActive()) {
@@ -386,7 +392,7 @@ void WiredTigerRecoveryUnit::refreshSnapshot() {
 
 
 //WiredTigerRecoveryUnit::_commit()  WiredTigerRecoveryUnit::_abort()  WiredTigerRecoveryUnit::doAbandonSnapshot()
-void WiredTigerRecoveryUnit::_txnClose(bool commit) {
+void WiredTigerRecoveryUnit::_txnClose(bool commit) {//事务提交或者事务回滚在这里面
     invariant(_isActive(), toString(_getState()));
     WT_SESSION* s = _session->getSession();
     if (_timer) { //定时器把事务满操作慢日志记录下来
@@ -404,7 +410,7 @@ void WiredTigerRecoveryUnit::_txnClose(bool commit) {
     }
 
     int wtRet;
-    if (commit) {
+    if (commit) {//事务提交
         StringBuilder conf;
         if (!_commitTimestamp.isNull()) {
             // There is currently no scenario where it is intentional to commit before the current
@@ -432,7 +438,7 @@ void WiredTigerRecoveryUnit::_txnClose(bool commit) {
                     "WT commit_transaction for snapshot id {snapshotId}",
                     "WT commit_transaction",
                     "snapshotId"_attr = getSnapshotId().toNumber());
-    } else {
+    } else {//事务回滚
         StringBuilder config;
         if (_noEvictionAfterRollback) {
             // The only point at which rollback_transaction() can time out is in the bonus-eviction
@@ -496,6 +502,7 @@ Status WiredTigerRecoveryUnit::obtainMajorityCommittedSnapshot() {
     return Status::OK();
 }
 
+
 boost::optional<Timestamp> WiredTigerRecoveryUnit::getPointInTimeReadTimestamp() {
     // After a ReadSource has been set on this RecoveryUnit, callers expect that this method returns
     // the read timestamp that will be used for current or future transactions. Because callers use
@@ -550,7 +557,7 @@ boost::optional<Timestamp> WiredTigerRecoveryUnit::getPointInTimeReadTimestamp()
 }
 
 //WiredTigerRecoveryUnit::getSession()  
-//事务begin_transaction封装
+//事务begin_transaction封装       
 void WiredTigerRecoveryUnit::_txnOpen() { //也就是对应begin_transaction
     invariant(!_isActive(), toString(_getState()));
     invariant(!_isCommittingOrAborting(),
@@ -621,6 +628,8 @@ void WiredTigerRecoveryUnit::_txnOpen() { //也就是对应begin_transaction
                 "snapshotId"_attr = getSnapshotId().toNumber(),
                 "readSource"_attr = toString(_timestampReadSource));
 }
+
+
 
 Timestamp WiredTigerRecoveryUnit::_beginTransactionAtAllDurableTimestamp(WT_SESSION* session) {
     WiredTigerBeginTxnBlock txnOpen(session,
@@ -812,10 +821,13 @@ void WiredTigerRecoveryUnit::setCommitTimestamp(Timestamp timestamp) {
     _commitTimestamp = timestamp;
 }
 
+//上面的WiredTigerRecoveryUnit::_txnClose  WiredTigerRecoveryUnit::setTimestamp调用WT存储引擎接口使用
 Timestamp WiredTigerRecoveryUnit::getCommitTimestamp() const {
     return _commitTimestamp;
 }
 
+
+//上面得WiredTigerRecoveryUnit::_txnClose  WiredTigerRecoveryUnit::setTimestamp调用WT存储引擎接口使用
 void WiredTigerRecoveryUnit::setDurableTimestamp(Timestamp timestamp) {
     invariant(
         _durableTimestamp.isNull(),
@@ -840,6 +852,7 @@ void WiredTigerRecoveryUnit::clearCommitTimestamp() {
     _commitTimestamp = Timestamp();
 }
 
+//上面的WiredTigerRecoveryUnit::prepareUnitOfWork()使用
 void WiredTigerRecoveryUnit::setPrepareTimestamp(Timestamp timestamp) {
     invariant(_inUnitOfWork(), toString(_getState()));
     invariant(_prepareTimestamp.isNull(),
@@ -870,6 +883,7 @@ Timestamp WiredTigerRecoveryUnit::getPrepareTimestamp() const {
     return _prepareTimestamp;
 }
 
+//WiredTigerRecoveryUnit::refreshSnapshot()  WiredTigerRecoveryUnit::_txnOpen() _beginTransactionAtAllDurableTimestamp等使用
 void WiredTigerRecoveryUnit::setPrepareConflictBehavior(PrepareConflictBehavior behavior) {
     // If there is an open storage transaction, it is not valid to try to change the behavior of
     // ignoring prepare conflicts, since that behavior is applied when the transaction is opened.
@@ -886,6 +900,8 @@ PrepareConflictBehavior WiredTigerRecoveryUnit::getPrepareConflictBehavior() con
     return _prepareConflictBehavior;
 }
 
+//
+//上面的WiredTigerRecoveryUnit::refreshSnapshot()  WiredTigerRecoveryUnit::_txnOpen() _beginTransactionAtLastAppliedTimestamp
 void WiredTigerRecoveryUnit::setRoundUpPreparedTimestamps(bool value) {
     // This cannot be called after WiredTigerRecoveryUnit::_txnOpen.
     invariant(!_isActive(),
@@ -895,6 +911,7 @@ void WiredTigerRecoveryUnit::setRoundUpPreparedTimestamps(bool value) {
         (value) ? RoundUpPreparedTimestamps::kRound : RoundUpPreparedTimestamps::kNoRound;
 }
 
+//上面的WiredTigerRecoveryUnit::refreshSnapshot()  getPointInTimeReadTimestamp  WiredTigerRecoveryUnit::_txnOpen()等调用
 void WiredTigerRecoveryUnit::setTimestampReadSource(ReadSource readSource,
                                                     boost::optional<Timestamp> provided) {
     LOGV2_DEBUG(22416,

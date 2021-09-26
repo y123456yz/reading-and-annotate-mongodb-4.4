@@ -59,6 +59,8 @@ bool canReadAtLastApplied(OperationContext* opCtx) {
 }  // namespace
 
 namespace SnapshotHelper {
+//读从节点的时候释放可以读最近一批回放的数据，从而可以跳过PBWM lock全局锁
+//AutoGetCollectionForRead::AutoGetCollectionForRead调用
 bool shouldReadAtLastApplied(OperationContext* opCtx,
                              const NamespaceString& nss,
                              std::string* reason) {
@@ -128,6 +130,7 @@ boost::optional<RecoveryUnit::ReadSource> getNewReadSource(OperationContext* opC
 
     const auto existing = opCtx->recoveryUnit()->getTimestampReadSource();
     std::string reason;
+	//读从节点的时候释放可以读最近一批回放的数据，从而可以跳过PBWM lock全局锁
     const bool readAtLastApplied = shouldReadAtLastApplied(opCtx, nss, &reason);
     if (existing == RecoveryUnit::ReadSource::kNoTimestamp) {
         // Shifting from reading without a timestamp to reading with a timestamp can be dangerous

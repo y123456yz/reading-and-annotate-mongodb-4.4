@@ -978,9 +978,13 @@ void ReplicationCoordinatorExternalStateImpl::updateCommittedSnapshot(
     notifyOplogMetadataWaiters(newCommitPoint);
 }
 
+//从节点一批oplog回放完毕后ApplyBatchFinalizer::_recordApplied->setMyLastAppliedOpTimeAndWallTimeForward->_setMyLastAppliedOpTimeAndWallTime
+//  ->updateLastAppliedSnapshot走到这里
+//ReplicationCoordinatorImpl::_setMyLastAppliedOpTimeAndWallTime
 void ReplicationCoordinatorExternalStateImpl::updateLastAppliedSnapshot(const OpTime& optime) {
     auto manager = _service->getStorageEngine()->getSnapshotManager();
     if (manager) {
+		//WiredTigerSnapshotManager::setLastApplied
         manager->setLastApplied(optime.getTimestamp());
     }
 }

@@ -473,6 +473,8 @@ public:
      * primary. User operations should *never* opt out.
      */
      //execCommandDatabase
+     //ShouldNotConflictWithSecondaryBatchApplicationBlock  execCommandDatabase  applyOplogBatchPerWorker  
+    //_reconstructPreparedTransaction  TxnResources::TxnResources
     void setShouldConflictWithSecondaryBatchApplication(bool newValue) {
         _shouldConflictWithSecondaryBatchApplication = newValue;
     }
@@ -540,6 +542,8 @@ protected:
     unsigned _numResourcesToUnlockAtEndUnitOfWork = 0;
 
 private:
+    //ShouldNotConflictWithSecondaryBatchApplicationBlock  execCommandDatabase  applyOplogBatchPerWorker  
+    //_reconstructPreparedTransaction  TxnResources::TxnResources 赋值
     bool _shouldConflictWithSecondaryBatchApplication = true;
     bool _shouldAcquireTicket = true;
     std::string _debugInfo;  // Extra info about this locker for debugging purpose
@@ -580,7 +584,8 @@ private:
 
 /**
  * RAII-style class to opt out of replication's use of the ParallelBatchWriterMode lock.
- */
+ */ 
+//AutoGetCollectionForRead._shouldNotConflictWithSecondaryBatchApplicationBlock为该类型
 class ShouldNotConflictWithSecondaryBatchApplicationBlock {
     ShouldNotConflictWithSecondaryBatchApplicationBlock(
         const ShouldNotConflictWithSecondaryBatchApplicationBlock&) = delete;

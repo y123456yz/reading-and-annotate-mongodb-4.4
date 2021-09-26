@@ -1205,6 +1205,11 @@ void ReplicationCoordinatorImpl::setMyHeartbeatMessage(const std::string& msg) {
     _topCoord->setMyHeartbeatMessage(_replExecutor->now(), msg);
 }
 
+
+//mongo在每应用完一批oplogs之后，会调用setMyLastAppliedOpTimeForward 方法设置local_timestamp为这一批oplog中最后一条的ts。
+//参考https://mongoing.com/archives/6102
+
+//从节点一批oplog回放完毕后ApplyBatchFinalizer::_recordApplied调用
 void ReplicationCoordinatorImpl::setMyLastAppliedOpTimeAndWallTimeForward(
     const OpTimeAndWallTime& opTimeAndWallTime, DataConsistency consistency) {
     // Update the global timestamp before setting the last applied opTime forward so the last
@@ -1302,6 +1307,7 @@ void ReplicationCoordinatorImpl::_reportUpstream_inlock(stdx::unique_lock<Latch>
     _externalState->forwardSlaveProgress();  // Must do this outside _mutex
 }
 
+//从节点一批oplog回放完毕后ApplyBatchFinalizer::_recordApplied->setMyLastAppliedOpTimeAndWallTimeForward->_setMyLastAppliedOpTimeAndWallTime
 void ReplicationCoordinatorImpl::_setMyLastAppliedOpTimeAndWallTime(
     WithLock lk,
     const OpTimeAndWallTime& opTimeAndWallTime,

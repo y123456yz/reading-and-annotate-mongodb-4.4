@@ -83,6 +83,9 @@ private:
     // Snapshot to use for reads at a commit timestamp.
     mutable Mutex _committedSnapshotMutex =  // Guards _committedSnapshot.
         MONGO_MAKE_LATCH("WiredTigerSnapshotManager::_committedSnapshotMutex");
+
+    //被大多数节点同步到的oplog中，opTime最大的Oplog，其对应的Snapshot被称为 CommittedSnapshot
+    //可以参考https://mongoing.com/archives/5476
     boost::optional<Timestamp> _committedSnapshot;
 
     // Timestamp to use for reads at a the lastApplied timestamp.

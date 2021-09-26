@@ -253,6 +253,7 @@ public:
      */
     void abandonSnapshot() {
         assignNextSnapshotId();
+        //WiredTigerRecoveryUnit::doAbandonSnapshot()
         doAbandonSnapshot();
     }
 

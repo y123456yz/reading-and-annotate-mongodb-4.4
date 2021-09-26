@@ -86,6 +86,7 @@ AutoStatsTracker::~AutoStatsTracker() {
                 curOp->getReadWriteType());
 }
 
+//从节点回放oplog过程阻塞读，还是通过快照读，这个逻辑在这里体现，可以参考https://mongoing.com/archives/6102
 AutoGetCollectionForRead::AutoGetCollectionForRead(OperationContext* opCtx,
                                                    const NamespaceStringOrUUID& nsOrUUID,
                                                    AutoGetCollection::ViewMode viewMode,
@@ -98,6 +99,7 @@ AutoGetCollectionForRead::AutoGetCollectionForRead(OperationContext* opCtx,
     // storage engine supports snapshot reads.
     if (gAllowSecondaryReadsDuringBatchApplication.load() &&
         allowSecondaryReadsDuringBatchApplication_DONT_USE(opCtx).value_or(true) &&
+        //WT引擎默认支持快照读，快照是基于时间戳的快照，指定快照读，就是基于指定时间戳读
         opCtx->getServiceContext()->getStorageEngine()->supportsReadConcernSnapshot()) {
         _shouldNotConflictWithSecondaryBatchApplicationBlock.emplace(opCtx->lockState());
     }

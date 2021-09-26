@@ -722,6 +722,7 @@ TransactionParticipant::OplogSlotReserver::~OplogSlotReserver() {
     }
 }
 
+
 TransactionParticipant::TxnResources::TxnResources(WithLock wl,
                                                    OperationContext* opCtx,
                                                    StashStyle stashStyle) noexcept {

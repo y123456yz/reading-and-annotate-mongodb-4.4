@@ -48,6 +48,7 @@ void WiredTigerSnapshotManager::setCommittedSnapshot(const Timestamp& timestamp)
     _committedSnapshot = timestamp;
 }
 
+//ReplicationCoordinatorExternalStateImpl::updateLastAppliedSnapshot  WiredTigerKVEngine::WiredTigerKVEngine
 void WiredTigerSnapshotManager::setLastApplied(const Timestamp& timestamp) {
     stdx::lock_guard<Latch> lock(_lastAppliedMutex);
     if (timestamp.isNull())
@@ -66,6 +67,7 @@ void WiredTigerSnapshotManager::dropAllSnapshots() {
     _committedSnapshot = boost::none;
 }
 
+//WiredTigerRecoveryUnit::obtainMajorityCommittedSnapshot()
 boost::optional<Timestamp> WiredTigerSnapshotManager::getMinSnapshotForNextCommittedRead() const {
     if (!serverGlobalParams.enableMajorityReadConcern) {
         return boost::none;

@@ -472,7 +472,7 @@ Status _applyPrepareTransaction(OperationContext* opCtx,
 
 /**
  * Apply a prepared transaction when we are reconstructing prepared transactions.
- */
+ */ 
 void _reconstructPreparedTransaction(OperationContext* opCtx,
                                      const OplogEntry& prepareEntry,
                                      repl::OplogApplication::Mode mode) {

@@ -295,7 +295,8 @@ void stableSortByNamespace(std::vector<const OplogEntry*>* oplogEntryPointers) {
 
 
 namespace {
-
+//mongo在每应用完一批oplogs之后，会调用setMyLastAppliedOpTimeForward 方法设置local_timestamp为这一批oplog中最后一条的ts。
+//参考https://mongoing.com/archives/6102，配合AutoGetCollectionForRead::AutoGetCollectionForRead阅读
 class ApplyBatchFinalizer {
 public:
     ApplyBatchFinalizer(ReplicationCoordinator* replCoord) : _replCoord(replCoord) {}
@@ -306,12 +307,16 @@ public:
         _recordApplied(newOpTimeAndWallTime, consistency);
     };
 
-protected:
+protected: 
     void _recordApplied(const OpTimeAndWallTime& newOpTimeAndWallTime,
                         ReplicationCoordinator::DataConsistency consistency) {
         // We have to use setMyLastAppliedOpTimeAndWallTimeForward since this thread races with
         // ReplicationExternalStateImpl::onTransitionToPrimary.
-        _replCoord->setMyLastAppliedOpTimeAndWallTimeForward(newOpTimeAndWallTime, consistency);
+        //mongo在每应用完一批oplogs之后，会调用setMyLastAppliedOpTimeForward 方法设置local_timestamp为这一批oplog中最后一条的ts。
+		//参考https://mongoing.com/archives/6102，配合AutoGetCollectionForRead::AutoGetCollectionForRead阅读
+
+		//ReplicationCoordinatorImpl::setMyLastAppliedOpTimeAndWallTimeForward
+		_replCoord->setMyLastAppliedOpTimeAndWallTimeForward(newOpTimeAndWallTime, consistency);
     }
 
     void _recordDurable(const OpTimeAndWallTime& newOpTimeAndWallTime) {
@@ -1013,6 +1018,7 @@ Status applyOplogEntryOrGroupedInserts(OperationContext* opCtx,
 
     MONGO_UNREACHABLE;
 }
+
 
 Status OplogApplierImpl::applyOplogBatchPerWorker(OperationContext* opCtx,
                                                   std::vector<const OplogEntry*>* ops,

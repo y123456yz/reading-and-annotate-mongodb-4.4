@@ -54,6 +54,7 @@ namespace repl {
  * Applies oplog entries.
  * Reads from an OplogBuffer batches of operations that may be applied in parallel.
  */
+//OplogApplierImplºÃ≥–∏√¿‡
 class OplogApplier {
     OplogApplier(const OplogApplier&) = delete;
     OplogApplier& operator=(const OplogApplier&) = delete;
