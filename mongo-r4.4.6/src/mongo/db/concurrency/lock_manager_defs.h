@@ -63,7 +63,111 @@ struct PartitionedLockHead;
  * | MODE_S         |      +       |    +    |          |    +   |          |
  * | MODE_X         |      +       |         |          |        |          |
  */
-enum LockMode {
+/*
+https://docs.mongodb.com/manual/faq/concurrency/
+
+Lock Mode   Description
+R   Represents Shared (S) lock.
+W   Represents Exclusive (X) lock.
+r   Represents Intent Shared (IS) lock.
+w   Represents Intent Exclusive (IX) lock.
+
+
+What locks are taken by some common client operations??
+The following table lists some operations and the types of locks they use for document level locking storage engines:
+
+Operation                               Database    Collection
+Issue a query                           r (Intent Shared)   r (Intent Shared)
+Insert data                             w (Intent Exclusive)    w (Intent Exclusive)
+Remove data                             w (Intent Exclusive)    w (Intent Exclusive)
+Update data                             w (Intent Exclusive)    w (Intent Exclusive)
+Perform Aggregation r (Intent Shared)   r (Intent Shared)
+Create an index (Foreground)            W (Exclusive)    
+Create an index (Background)            w (Intent Exclusive)    w (Intent Exclusive)
+List collections                        r (Intent Shared)
+                                        Changed in version 4.0.
+Map-reduce                              W (Exclusive) and R (Shared)    w (Intent Exclusive) and r (Intent Shared)
+
+
+
+
+MongoDB 加锁时，有四种模式【MODE_IS、MODE_IX、MODE_S、MODE_X】，MODE_S， MODE_X 很容易理解，分别是互斥读锁、
+互斥写锁，MODE_IS、MODE_IX是为了实现层次锁模型引入的，称为意向读锁、意向写锁，锁之间的竞争情况如上图所示。
+
+MongoDB在加锁时，是一个层次性的管理方式，从 globalLock ==> DBLock ==> CollecitonLock … ，比如我们都知道
+MongoDB wiredtiger是文档级别锁，那么读写并发时，加锁就类似如下
+
+写操作
+
+1. globalLock  (这一层只关注是读还是写，不关注具体是什么LOCK)
+2. DBLock MODE_IX
+3. Colleciotn MODE_IX
+4. pass request to wiredtiger
+
+读操作
+1. globalLock MODE_IS  (这一层只关注是读还是写，不关注具体是什么LOCK)
+2. DBLock MODE_IS
+3. Colleciton MODE_IS
+4. pass request to wiredtiger
+根据上图的竞争情况，IS和IX是无需竞争的，所以读写请求可以在没有竞争的情况下，同时传到wiredtiger引擎去处理。
+
+再举个栗子，如果一个前台建索引的操作跟一个读请求并发了
+
+前台建索引操作
+
+1. globalLock MODE_IX (这一层只关注是读还是写，不关注具体是什么LOCK)
+2. DBLock MODE_X
+3. pass to wiredtiger
+
+读操作
+1. globalLock MODE_IS (这一层只关注是读还是写，不关注具体是什么LOCK)
+2. DBLock MODE_IS
+3. Colleciton MODE_IS
+4. pass request to wiredtiger
+根据竞争表，MODE_X和MODE_IS是要竞争的，这也就是为什么前台建索引的过程中读是被阻塞的。
+
+我们今天介绍的 globalLock 对应上述的第一步，在globalLock这一层，只关心是读锁、还是写锁，不关心是互斥锁还是意向锁，
+所以 globalLock 这一层是不存在竞争的。
+http://www.mongoing.com/archives/4768
+
+所有的锁都是平等的，它们是排在一个队列里，符合FIFO原则。但是，MongoDB做了优化，即当一个锁被采用时，
+所有与它兼容的锁都会被采纳，从而可以并发操作。举个例子，当你针对Collection A中
+的Document a使用S锁时，其它reader可以同时使用S锁来读取该Document a，也可以同时读取同一个Collection
+的Document b.因为所有的S锁都是兼容的。那么，如果此时针对Collection A中的Document c进行写操作是否可
+以呢？显然需要为Document c赋予x锁，此时Collection A就需要IX锁，而由于IX和IS是兼容的，所以没有问题。
+简单来说，只要不是同一个Document，读写操作是可以并发的；如果是同一个Document，读可以并发，但写不可以。
+https://www.jianshu.com/p/d838a5905303
+*/ //简单来说，只要不是同一个Document，读写操作是可以并发的；如果是同一个Document，读可以并发，但写不可以。
+/**
+ * Lock modes.
+ *
+ * Compatibility Matrix  相容性关系 +相容共存        +是兼容的   
+ *                                          Granted mode
+ *   ---------------.--------------------------------------------------------.
+ *   Requested Mode | MODE_NONE  MODE_IS   MODE_IX  MODE_S   MODE_X  |
+ *     MODE_IS      |      +        +         +        +        -    |
+ *     MODE_IX      |      +        +         +        -        -    |
+ *     MODE_S       |      +        +         -        +        -    |
+ *     MODE_X       |      +        -         -        -        -    |  加了MODE_X锁后，读写都不相容
+ * 官方文档https://docs.mongodb.com/manual/faq/concurrency/
+ */ 
+
+//四种模式的锁，锁放入ticketHolders指针数组
+
+//文章参考 https://yq.aliyun.com/articles/655101 浅析MongoDB中的意向锁
+//https://mongoing.com/archives/4768
+//浅析MongoDB中的意向锁  https://mp.weixin.qq.com/s/aD6AySeHX8uqMlg9NgvppA?spm=a2c4e.11153940.blogcont655101.6.6fca281cYe2TH0
+//ResourceId锁(包含全局锁 库锁 表锁)，每个ResourceId锁可以细分为不同类型的MODE_IS MODE_IX MODE_S MODE_X锁
+
+
+//ResourceId和LockMode通过LockerImpl._requests查找联系，参考getLockMode
+
+//不同锁互斥不相容对应的判断方法isModeCovered
+
+
+//每个模式对应一个TicketHolder，参考ticketHolders
+enum LockMode { //不同锁的统计在LockStats中实现
+
     /** None */
     MODE_NONE = 0,
     /** Intent shared */

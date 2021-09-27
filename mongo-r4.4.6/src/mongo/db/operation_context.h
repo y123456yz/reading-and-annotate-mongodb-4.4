@@ -580,7 +580,10 @@ private:
     boost::optional<LogicalSessionId> _lsid;
     boost::optional<TxnNumber> _txnNumber;
 
-    std::unique_ptr<Locker> _locker;
+    //Lock::DBLock::DBLock中调用使用,赋值见ServiceContextMongoD::_newOpCtx
+    //慢日志记录参考ServiceEntryPointMongod::handleRequest  
+    //lockState()获取该locker
+    std::unique_ptr<Locker> _locker; //wiredtiger对应的锁为LockerImpl
 
     std::unique_ptr<RecoveryUnit> _recoveryUnit;
     WriteUnitOfWork::RecoveryUnitState _ruState =

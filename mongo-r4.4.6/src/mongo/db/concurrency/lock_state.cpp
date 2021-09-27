@@ -1110,6 +1110,8 @@ const ResourceId resourceIdLocalDB = ResourceId(RESOURCE_DATABASE, StringData("l
 const ResourceId resourceIdOplog = ResourceId(RESOURCE_COLLECTION, StringData("local.oplog.rs"));
 const ResourceId resourceIdAdminDB = ResourceId(RESOURCE_DATABASE, StringData("admin"));
 const ResourceId resourceIdGlobal = ResourceId(RESOURCE_GLOBAL, 1ULL);
+//Lock::GlobalLock::GlobalLock全局锁使用的时候会获取该锁，注意这里相比3.x已经不是RESOURCE_GLOBAL资源类型，因此可以实现从节点oplog回放不阻塞
+//可以参考sleep命令的_sleepInPBWM实现
 const ResourceId resourceIdParallelBatchWriterMode = ResourceId(RESOURCE_PBWM, 1ULL);
 const ResourceId resourceIdReplicationStateTransitionLock = ResourceId(RESOURCE_RSTL, 1ULL);
 

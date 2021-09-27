@@ -86,6 +86,7 @@ AutoStatsTracker::~AutoStatsTracker() {
                 curOp->getReadWriteType());
 }
 
+//配合从节点oplog回放逻辑OplogApplierImpl::_applyOplogBatch走读
 //从节点回放oplog过程阻塞读，还是通过快照读，这个逻辑在这里体现，可以参考https://mongoing.com/archives/6102
 AutoGetCollectionForRead::AutoGetCollectionForRead(OperationContext* opCtx,
                                                    const NamespaceStringOrUUID& nsOrUUID,
