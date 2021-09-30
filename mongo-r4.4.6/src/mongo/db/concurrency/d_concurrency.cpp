@@ -148,6 +148,8 @@ Lock::GlobalLock::GlobalLock(OperationContext* opCtx,
     _opCtx->lockState()->getFlowControlTicket(_opCtx, lockMode);
 
     try {
+		//如果和从节点oplog回放有冲突，则这里对resourceIdParallelBatchWriterMode类型资源锁加IS读意向锁，这时候就会和从节点
+		//oplog回放锁冲突，这里就会阻塞
         if (_opCtx->lockState()->shouldConflictWithSecondaryBatchApplication()) {
             _pbwm.lock(opCtx, MODE_IS, deadline);
         }
@@ -308,6 +310,7 @@ Lock::CollectionLock::~CollectionLock() {
         _opCtx->lockState()->unlock(_id);
 }
 
+//OplogApplierImpl::_applyOplogBatch中调用
 Lock::ParallelBatchWriterMode::ParallelBatchWriterMode(Locker* lockState)
     : _pbwm(lockState, resourceIdParallelBatchWriterMode, MODE_X),
       _shouldNotConflictBlock(lockState) {}

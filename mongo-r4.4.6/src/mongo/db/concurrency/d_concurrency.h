@@ -379,6 +379,10 @@ public:
      * Note that only one thread creates a ParallelBatchWriterMode object; the other batch
      * writers just call setShouldConflictWithSecondaryBatchApplication(false).
      */
+    /*
+      初始化构造见:
+      Lock::ParallelBatchWriterMode::ParallelBatchWriterMode
+     */
     class ParallelBatchWriterMode {
         ParallelBatchWriterMode(const ParallelBatchWriterMode&) = delete;
         ParallelBatchWriterMode& operator=(const ParallelBatchWriterMode&) = delete;

@@ -51,7 +51,7 @@ RecoveryUnit::RecoveryUnit() {
     assignNextSnapshotId();
 }
 
-//RecoveryUnit::RecoveryUnit()  abandonSnapshot() 注意这个是全局的，只要构造一个 
+//RecoveryUnit::RecoveryUnit() commitUnitOfWork()  abortUnitOfWork() abandonSnapshot() 注意这个是全局的，只要构造一个 
 //实际上是个全局的id，WriteUnitOfWork wuow1(opCtx);每构造一个新的wuow则自增
 void RecoveryUnit::assignNextSnapshotId() {
     _mySnapshotId = nextSnapshotId.fetchAndAdd(1);

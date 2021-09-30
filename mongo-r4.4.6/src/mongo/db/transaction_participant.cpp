@@ -1680,6 +1680,9 @@ void TransactionParticipant::Participant::_finishAbortingActiveTransaction(
     }
 }
 
+//mongos事务操作日志记录 _endTransactionTrackingIfNecessary
+//mongod事务操作日志记录 _abortTransactionOnSession  _cleanUpTxnResourceOnOpCtx
+
 //Participant::abortTransaction
 void TransactionParticipant::Participant::_abortTransactionOnSession(OperationContext* opCtx) {
     const auto tickSource = opCtx->getServiceContext()->getTickSource();
@@ -1710,8 +1713,10 @@ void TransactionParticipant::Participant::_abortTransactionOnSession(OperationCo
 }
 
 
+//mongos事务操作日志记录 _endTransactionTrackingIfNecessary
+//mongod事务操作日志记录 _abortTransactionOnSession  _cleanUpTxnResourceOnOpCtx
 
-//事务日志记录，重新生成新WiredTigerRecoveryUnit
+//事务日志记录，重新生成新WiredTigerRecoveryUnit, commitTransaction事务提交后会走到该流程
 void TransactionParticipant::Participant::_cleanUpTxnResourceOnOpCtx(
     OperationContext* opCtx, TerminationCause terminationCause) {
     // Log the transaction if its duration is longer than the slowMS command threshold.
@@ -2262,6 +2267,7 @@ BSONObj TransactionParticipant::Participant::_transactionInfoBSONForLog(
     return logLine.obj();
 }
 
+//记录事务从startTransaction到commitTransaction整个事务的总时间消耗
 void TransactionParticipant::Participant::_logSlowTransaction(
     OperationContext* opCtx,
     const SingleThreadedLockStats* lockStats,
@@ -2286,7 +2292,8 @@ void TransactionParticipant::Participant::_logSlowTransaction(
 			//  "txnNumber":0,"autocommit":false,"readConcern":{"level":"local"}},"readTimestamp":"Timestamp(0, 0)","ninserted":2,"keysInserted":2,"terminationCause":"committed","timeActiveMicros":8177,
 			// "timeInactiveMicros":58916750,"numYields":0,"locks":{"ReplicationStateTransition":{"acquireCount":{"w":4}},"Global":{"acquireCount":{"r":1,"w":2}},"Database":{"acquireCount":{"w":4}},
 			// "Collection":{"acquireCount":{"w":4}},"Mutex":{"acquireCount":{"r":4}}},"storage":{"data":{"bytesRead":586,"timeReadingMicros":60}},"wasPrepared":false,"durationMillis":58924}}
-            LOGV2_OPTIONS(51802, {logv2::LogComponent::kTransaction}, "transaction", attr);
+			//记录事务从startTransaction到commitTransaction整个事务的总时间消耗
+			LOGV2_OPTIONS(51802, {logv2::LogComponent::kTransaction}, "transaction", attr);
         }
     }
 }

@@ -615,6 +615,11 @@ void scheduleWritesToOplog(OperationContext* opCtx,
     }
 }
 
+//配合AutoGetCollectionForRead::AutoGetCollectionForRead阅读, 为什么4.X解决了从阻塞读的问题
+//相比3.6版本，AutoGetCollectionForRead构造中意见去掉了获取DBLock流程，所以也不会走DBLock->globalLock流程
+// 4.X版本AutoGetCollectionForRead初始化构造这里做了优化，不会在获取DB lock以及global lock，也就不会和从节点oplog回放时候的ParallelBatchWriterMode冲突
+
+
 //从节点批量oplog回放
 StatusWith<OpTime> OplogApplierImpl::_applyOplogBatch(OperationContext* opCtx,
                                                       std::vector<OplogEntry> ops) {
@@ -629,7 +634,8 @@ StatusWith<OpTime> OplogApplierImpl::_applyOplogBatch(OperationContext* opCtx,
     // Stop all readers until we're done. This also prevents doc-locking engines from deleting old
     // entries from the oplog until we finish writing.
     //加一把全局MODE_X锁，参考https://mongoing.com/archives/5560  https://mongoing.com/archives/5560  https://cloud.tencent.com/developer/article/1006519
-    Lock::ParallelBatchWriterMode pbwm(opCtx->lockState());
+	//这里会和Lock::GlobalLock::GlobalLock的 _pbwm(opCtx->lockState(), resourceIdParallelBatchWriterMode)锁冲突
+	Lock::ParallelBatchWriterMode pbwm(opCtx->lockState());
 
     invariant(_replCoord);
     if (_replCoord->getApplierState() == ReplicationCoordinator::ApplierState::Stopped) {

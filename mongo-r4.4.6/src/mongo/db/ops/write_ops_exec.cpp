@@ -349,6 +349,7 @@ void insertDocuments(OperationContext* opCtx,
             // This also notifies the storage engine of each new timestamp.
             //insertDocuments->oplog.cpp中的getNextOpTimes
             //oplogSlots为OplogSlot数组类型，每条数据会对应生成一个ts，这里面会保证明天记录的ts不一样
+            //注意事务封装WT begin_transaction也在这里面
             auto oplogSlots = repl::getNextOpTimes(opCtx, batchSize);
             auto slot = oplogSlots.begin();
             for (auto it = begin; it != end; it++) {

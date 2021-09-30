@@ -104,6 +104,7 @@ void LocalOplogInfo::setNewTimestamp(ServiceContext* service, const Timestamp& n
 //insertDocuments->oplog.cpp中的getNextOpTimes->LocalOplogInfo::getNextOpTimes
 
 ////oplog.cpp中的getNextOpTimes调用, 获取oplog对应的ts
+//注意事务封装WT begin_transaction也在这里面
 std::vector<OplogSlot> LocalOplogInfo::getNextOpTimes(OperationContext* opCtx, std::size_t count) {
     auto replCoord = ReplicationCoordinator::get(opCtx);
     long long term = OpTime::kUninitializedTerm;

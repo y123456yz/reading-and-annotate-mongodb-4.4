@@ -544,6 +544,8 @@ protected:
 private:
     //ShouldNotConflictWithSecondaryBatchApplicationBlock  execCommandDatabase  applyOplogBatchPerWorker  
     //_reconstructPreparedTransaction  TxnResources::TxnResources 赋值
+
+    //真正生效参考Lock::GlobalLock::GlobalLock  shouldReadAtLastApplied
     bool _shouldConflictWithSecondaryBatchApplication = true;
     bool _shouldAcquireTicket = true;
     std::string _debugInfo;  // Extra info about this locker for debugging purpose

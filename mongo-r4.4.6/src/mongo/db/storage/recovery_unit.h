@@ -178,7 +178,7 @@ public:
      * beginUnitOfWork.
      *
      * Should be called through WriteUnitOfWork rather than directly.
-     */
+     */  
     void abortUnitOfWork() {
         assignNextSnapshotId();
         doAbortUnitOfWork();
@@ -251,7 +251,8 @@ public:
      * If there is an open transaction, it is closed. On return no transaction is active. This
      * cannot be called inside of a WriteUnitOfWork, and should fail if it is.
      */
-    void abandonSnapshot() {
+    //释放掉该快照，可以参考下https://mongoing.com/archives/5476
+    void abandonSnapshot() { 
         assignNextSnapshotId();
         //WiredTigerRecoveryUnit::doAbandonSnapshot()
         doAbandonSnapshot();
@@ -424,6 +425,7 @@ public:
      * The ReadSource indicates which external or provided timestamp to read from for future
      * transactions.
      */
+    //setTimestampReadSource中赋值
     enum ReadSource {
         /**
          * Read without a timestamp. This is the default.
@@ -728,6 +730,7 @@ private:
     State _state = State::kInactive;
 
     //实际上是个全局的id，WriteUnitOfWork wuow1(opCtx);每构造一个新的wuow则自增
+    //getSnapshotId接口获取该值
     uint64_t _mySnapshotId;
 };
 

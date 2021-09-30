@@ -61,6 +61,7 @@ bool canReadAtLastApplied(OperationContext* opCtx) {
 namespace SnapshotHelper {
 //读从节点的时候释放可以读最近一批回放的数据，从而可以跳过PBWM lock全局锁
 //AutoGetCollectionForRead::AutoGetCollectionForRead调用
+//lastapplied time见ApplyBatchFinalizer::_recordApplied赋值
 bool shouldReadAtLastApplied(OperationContext* opCtx,
                              const NamespaceString& nss,
                              std::string* reason) {

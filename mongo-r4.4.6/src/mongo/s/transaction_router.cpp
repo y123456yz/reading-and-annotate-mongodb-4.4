@@ -1363,6 +1363,9 @@ BSONObj TransactionRouter::Router::_commitWithRecoveryToken(OperationContext* op
         .response;
 }
 
+//mongos事务操作日志记录 _endTransactionTrackingIfNecessary
+//mongod事务操作日志记录 _abortTransactionOnSession  _cleanUpTxnResourceOnOpCtx
+//mongos的详细事务日志记录
 void TransactionRouter::Router::_logSlowTransaction(OperationContext* opCtx,
                                                     TerminationCause terminationCause) const {
 
@@ -1577,6 +1580,8 @@ void TransactionRouter::Router::_onSuccessfulCommit(OperationContext* opCtx) {
     _endTransactionTrackingIfNecessary(opCtx, TerminationCause::kCommitted);
 }
 
+//mongos事务操作日志记录 _endTransactionTrackingIfNecessary
+//mongod事务操作日志记录 _abortTransactionOnSession  _cleanUpTxnResourceOnOpCtx
 void TransactionRouter::Router::_endTransactionTrackingIfNecessary(
     OperationContext* opCtx, TerminationCause terminationCause) {
     if (o().metricsTracker->isTrackingOver()) {

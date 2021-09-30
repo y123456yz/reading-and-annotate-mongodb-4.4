@@ -317,7 +317,11 @@ boost::optional<int64_t> WiredTigerRecoveryUnit::getOplogVisibilityTs() {
     return _oplogVisibleTs;
 }
 
-//insertDocuments->oplog.cppÖĞµÄgetNextOpTimes->LocalOplogInfo::getNextOpTimes->WiredTigerRecoveryUnit::preallocateSnapshot()
+//²éÑ¯Á÷³ÌAutoGetCollectionForRead::AutoGetCollectionForRead-> opCtx->recoveryUnit()->getPointInTimeReadTimestamp() 
+//  -> WiredTigerRecoveryUnit::getPointInTimeReadTimestamp() ->WiredTigerRecoveryUnit::getSession()
+
+
+//Ğ´:insertDocuments->oplog.cppÖĞµÄgetNextOpTimes->LocalOplogInfo::getNextOpTimes->WiredTigerRecoveryUnit::preallocateSnapshot()
 
 // Begin a new transaction, if one is not already started. //ÊÂÎñbegin_transaction·â×°
 WiredTigerSession* WiredTigerRecoveryUnit::getSession() {
@@ -338,7 +342,8 @@ WiredTigerSession* WiredTigerRecoveryUnit::getSessionNoTxn() {
     return session;
 }
 
-//recover_unit.hÖĞµÄabandonSnapshot()µ÷ÓÃ
+//recover_unit.hÖĞµÄabandonSnapshot()µ÷ÓÃ 
+//ÊÍ·Åµô¸Ã¿ìÕÕ£¬¿ÉÒÔ²Î¿¼ÏÂhttps://mongoing.com/archives/5476
 void WiredTigerRecoveryUnit::doAbandonSnapshot() {
     invariant(!_inUnitOfWork(), toString(_getState()));
     if (_isActive()) {
@@ -391,7 +396,8 @@ void WiredTigerRecoveryUnit::refreshSnapshot() {
 }
 
 
-//WiredTigerRecoveryUnit::_commit()  WiredTigerRecoveryUnit::_abort()  WiredTigerRecoveryUnit::doAbandonSnapshot()
+//WiredTigerRecoveryUnit::_commit(true)  WiredTigerRecoveryUnit::_abort(false)  
+//WiredTigerRecoveryUnit::doAbandonSnapshot(false)
 void WiredTigerRecoveryUnit::_txnClose(bool commit) {//ÊÂÎñÌá½»»òÕßÊÂÎñ»Ø¹öÔÚÕâÀïÃæ
     invariant(_isActive(), toString(_getState()));
     WT_SESSION* s = _session->getSession();
@@ -410,7 +416,8 @@ void WiredTigerRecoveryUnit::_txnClose(bool commit) {//ÊÂÎñÌá½»»òÕßÊÂÎñ»Ø¹öÔÚÕâÀ
     }
 
     int wtRet;
-    if (commit) {//ÊÂÎñÌá½»
+    if (commit) {
+		//ÊÂÎñÌá½»£¬×¢ÒâÕâÀï£¬Èç¹û_commitTimestamp²»Îªnull£¬²¢ÇÒ_durableTimestamp²»Îªnull£¬Ôòconf»áÎª¿Õ£¬ÕâÑù¾ÍÊµÏÖÁËÒıÇæ²ãtimestamp¶ÔÓ¦¿ìÕÕµÄÊÍ·Å
         StringBuilder conf;
         if (!_commitTimestamp.isNull()) {
             // There is currently no scenario where it is intentional to commit before the current
@@ -502,7 +509,7 @@ Status WiredTigerRecoveryUnit::obtainMajorityCommittedSnapshot() {
     return Status::OK();
 }
 
-
+//×¢ÒâÕâÀïÃæ»áÆôÓÃÊÂÎñWT begin_transaction
 boost::optional<Timestamp> WiredTigerRecoveryUnit::getPointInTimeReadTimestamp() {
     // After a ReadSource has been set on this RecoveryUnit, callers expect that this method returns
     // the read timestamp that will be used for current or future transactions. Because callers use
@@ -531,6 +538,7 @@ boost::optional<Timestamp> WiredTigerRecoveryUnit::getPointInTimeReadTimestamp()
     }
 
     // Ensure a transaction is opened.
+    //×¢ÒâÕâÀïÃæ»áÆôÓÃÊÂÎñWT begin_transaction
     getSession();
 
     switch (_timestampReadSource) {

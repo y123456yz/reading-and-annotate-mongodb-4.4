@@ -88,6 +88,8 @@ AutoStatsTracker::~AutoStatsTracker() {
 
 //配合从节点oplog回放逻辑OplogApplierImpl::_applyOplogBatch走读
 //从节点回放oplog过程阻塞读，还是通过快照读，这个逻辑在这里体现，可以参考https://mongoing.com/archives/6102
+//相比3.6版本，AutoGetCollectionForRead构造中意见去掉了获取DBLock流程，所以也不会走DBLock->globalLock流程
+// 4.X版本AutoGetCollectionForRead初始化构造这里做了优化，不会在获取DB lock以及global lock，也就不会和从节点oplog回放时候的ParallelBatchWriterMode冲突
 AutoGetCollectionForRead::AutoGetCollectionForRead(OperationContext* opCtx,
                                                    const NamespaceStringOrUUID& nsOrUUID,
                                                    AutoGetCollection::ViewMode viewMode,
@@ -163,11 +165,23 @@ AutoGetCollectionForRead::AutoGetCollectionForRead(OperationContext* opCtx,
                         "collection"_attr = nss);
         }
 
+		//注意这里面会启用事务WT begin_transaction
+		//WiredTigerRecoveryUnit::getPointInTimeReadTimestamp()
         const auto readTimestamp = opCtx->recoveryUnit()->getPointInTimeReadTimestamp();
         const auto minSnapshot = coll->getMinimumVisibleSnapshot();
+
+		//如果修改了表名，并且表对应快照时间戳比readTimestamp大，说明有冲突，不能读取readTimestamp对应快照
+		//一般正常情况下，都是从这里直接返回，表示获取锁信息成功
         if (!SnapshotHelper::collectionChangesConflictWithRead(minSnapshot, readTimestamp)) {
+			LOGV2_DEBUG(122418,
+		        3,
+		        "yang test .......AutoGetCollectionForRead::AutoGetCollectionForRead no conflict");
             return;
         }
+
+		LOGV2_DEBUG(122418,
+	        3,
+	        "yang test .......AutoGetCollectionForRead::AutoGetCollectionForRead  conflict ");
 
         // If we are reading at a provided timestamp earlier than the latest catalog changes,
         // then we must return an error.
