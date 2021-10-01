@@ -1,0 +1,304 @@
+4.2.15 事务日志打印
+
+mongo shell命令过程如下:
+
+test_auth_repl_4.2.15:PRIMARY> session = db.getMongo().startSession( { readPreference: { mode: "primary" } } );
+session { "id" : UUID("474a3b30-9556-462e-9131-6464fcfc9054") }
+test_auth_repl_4.2.15:PRIMARY> coll1 = session.getDatabase("mydb1").foo;
+mydb1.foo
+test_auth_repl_4.2.15:PRIMARY> coll2 = session.getDatabase("mydb2").bar;
+mydb2.bar
+test_auth_repl_4.2.15:PRIMARY> // Start a transaction
+test_auth_repl_4.2.15:PRIMARY> session.startTransaction( { readConcern: { level: "local" }, writeConcern: { w: "majority" } } );
+test_auth_repl_4.2.15:PRIMARY>    coll1.insertOne( { abc: 1 } );
+{
+        "acknowledged" : true,
+        "insertedId" : ObjectId("6101630ad2f440509e810bf1")
+}
+test_auth_repl_4.2.15:PRIMARY>    coll2.insertOne( { xyz: 999 } );
+{
+        "acknowledged" : true,
+        "insertedId" : ObjectId("6101630bd2f440509e810bf2")
+}
+test_auth_repl_4.2.15:PRIMARY> session.commitTransaction();
+test_auth_repl_4.2.15:PRIMARY> session.endSession();
+test_auth_repl_4.2.15:PRIMARY> 
+test_auth_repl_4.2.15:PRIMARY> 
+test_auth_repl_4.2.15:PRIMARY> 
+
+
+
+
+
+
+
+对应mongod.log日志如下：
+
+步骤1：session = db.getMongo().startSession( { readPreference: { mode: "primary" } } );
+2021-07-28T22:09:20.181+0800 I  COMMAND  [conn2] command admin.$cmd appName: "MongoDB Shell" command: replSetGetStatus { replSetGetStatus: 1.0, forShell: 1.0, $clusterTime: { clusterTime: Timestamp(1627481335, 1), signature: { hash: BinData(0, 36D2192E090736133253F15B4622FB705ADA004C), keyId: 6989975324809232388 } }, $db: "admin" } numYields:0 reslen:1503 locks:{} protocol:op_msg 0ms
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+步骤2：coll1 = session.getDatabase("mydb1").foo;和coll2 = session.getDatabase("mydb2").bar;对应日志
+
+2021-07-28T22:09:33.361+0800 I  COMMAND  [conn2] command admin.$cmd appName: "MongoDB Shell" command: replSetGetStatus { replSetGetStatus: 1.0, forShell: 1.0, $clusterTime: { clusterTime: Timestamp(1627481355, 1), signature: { hash: BinData(0, F0685EDEB5AFE16BF4A650B27635F4D610A08A95), keyId: 6989975324809232388 } }, $db: "admin" } numYields:0 reslen:1503 locks:{} protocol:op_msg 0ms
+2021-07-28T22:09:33.664+0800 I  COMMAND  [conn2] command admin.$cmd appName: "MongoDB Shell" command: replSetGetStatus { replSetGetStatus: 1.0, forShell: 1.0, $clusterTime: { clusterTime: Timestamp(1627481365, 1), signature: { hash: BinData(0, 722D0A8E8B5FD3B7481014087B2840755E0487C9), keyId: 6989975324809232388 } }, $db: "admin" } numYields:0 reslen:1503 locks:{} protocol:op_msg 0ms
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+步骤3：session.startTransaction( { readConcern: { level: "local" }, writeConcern: { w: "majority" } } );对应日志
+
+2021-07-28T22:09:57.951+0800 I  COMMAND  [conn2] command admin.$cmd appName: "MongoDB Shell" command: replSetGetStatus { replSetGetStatus: 1.0, forShell: 1.0, $clusterTime: { clusterTime: Timestamp(1627481365, 1), signature: { hash: BinData(0, 722D0A8E8B5FD3B7481014087B2840755E0487C9), keyId: 6989975324809232388 } }, $db: "admin" } numYields:0 reslen:1503 locks:{} protocol:op_msg 0ms
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+步骤4：coll1.insertOne( { abc: 1 } );和 coll2.insertOne( { xyz: 999 } );对应日志
+
+2021-07-28T22:10:09.287+0800 I  COMMAND  [conn2] command config.transactions appName: "MongoDB Shell" command: find { find: "transactions", filter: { _id: { id: UUID("672a574b-3903-4112-8e9a-56dbbaad4ec8"), uid: BinData(0, 6399AB0DAC62F20BFC466753B10FB58FB7E692BEC952C69B84D997021794D1F8) } }, ntoreturn: 1, singleBatch: true, $db: "config" } planSummary: IDHACK keysExamined:0 docsExamined:0 cursorExhausted:1 numYields:0 nreturned:0 reslen:233 locks:{ ReplicationStateTransition: { acquireCount: { w: 1 } }, Global: { acquireCount: { w: 1 } }, Database: { acquireCount: { w: 1 } }, Collection: { acquireCount: { w: 1 } }, Mutex: { acquireCount: { r: 1 } } } storage:{} protocol:op_msg 0ms
+2021-07-28T22:10:09.287+0800 I  COMMAND  [conn2] command mydb1.foo appName: "MongoDB Shell" command: insert { insert: "foo", ordered: true, lsid: { id: UUID("672a574b-3903-4112-8e9a-56dbbaad4ec8") }, $clusterTime: { clusterTime: Timestamp(1627481395, 1), signature: { hash: BinData(0, 926F6CBE946658C138495ECC414EBF43A5A15519), keyId: 6989975324809232388 } }, txnNumber: 0, autocommit: false, stmtId: 0, startTransaction: true, readConcern: { level: "local" }, $db: "mydb1" } ninserted:1 keysInserted:1 numYields:0 reslen:230 locks:{} storage:{} protocol:op_msg 0ms
+2021-07-28T22:10:09.290+0800 I  COMMAND  [conn2] command admin.$cmd appName: "MongoDB Shell" command: replSetGetStatus { replSetGetStatus: 1.0, forShell: 1.0, $clusterTime: { clusterTime: Timestamp(1627481405, 1), signature: { hash: BinData(0, 51AFE0133013866D47D668AFFCFB15D46B2CA124), keyId: 6989975324809232388 } }, $db: "admin" } numYields:0 reslen:1503 locks:{} protocol:op_msg 0ms
+2021-07-28T22:10:09.876+0800 I  COMMAND  [conn2] command mydb2.bar appName: "MongoDB Shell" command: insert { insert: "bar", ordered: true, lsid: { id: UUID("672a574b-3903-4112-8e9a-56dbbaad4ec8") }, $clusterTime: { clusterTime: Timestamp(1627481405, 1), signature: { hash: BinData(0, 51AFE0133013866D47D668AFFCFB15D46B2CA124), keyId: 6989975324809232388 } }, txnNumber: 0, autocommit: false, stmtId: 1, $db: "mydb2" } ninserted:1 keysInserted:1 numYields:0 reslen:230 locks:{} storage:{} protocol:op_msg 0ms
+2021-07-28T22:10:09.878+0800 I  COMMAND  [conn2] command admin.$cmd appName: "MongoDB Shell" command: replSetGetStatus { replSetGetStatus: 1.0, forShell: 1.0, $clusterTime: { clusterTime: Timestamp(1627481405, 1), signature: { hash: BinData(0, 51AFE0133013866D47D668AFFCFB15D46B2CA124), keyId: 6989975324809232388 } }, $db: "admin" } numYields:0 reslen:1503 locks:{} protocol:op_msg 0ms
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+步骤5：session.commitTransaction();对应日志
+
+2021-07-28T22:10:28.350+0800 I  TXN      [conn2] transaction parameters:{ lsid: { id: UUID("672a574b-3903-4112-8e9a-56dbbaad4ec8"), uid: BinData(0, 6399AB0DAC62F20BFC466753B10FB58FB7E692BEC952C69B84D997021794D1F8) }, txnNumber: 0, autocommit: false, readConcern: { level: "snapshot" } }, readTimestamp:Timestamp(0, 0), ninserted:2 keysInserted:2 terminationCause:committed timeActiveMicros:304 timeInactiveMicros:19062300 numYields:0 locks:{ ReplicationStateTransition: { acquireCount: { w: 4 } }, Global: { acquireCount: { r: 1, w: 2 } }, Database: { acquireCount: { w: 4 } }, Collection: { acquireCount: { w: 4 } }, Mutex: { acquireCount: { r: 6 } } } storage:{} wasPrepared:0, 19062ms
+2021-07-28T22:10:28.350+0800 I  COMMAND  [conn2] command admin.$cmd appName: "MongoDB Shell" command: commitTransaction { commitTransaction: 1.0, txnNumber: 0, writeConcern: { w: "majority" }, lsid: { id: UUID("672a574b-3903-4112-8e9a-56dbbaad4ec8") }, $clusterTime: { clusterTime: Timestamp(1627481405, 1), signature: { hash: BinData(0, 51AFE0133013866D47D668AFFCFB15D46B2CA124), keyId: 6989975324809232388 } }, autocommit: false, stmtId: 2, $db: "admin" } numYields:0 reslen:163 locks:{ ReplicationStateTransition: { acquireCount: { w: 4 } }, Global: { acquireCount: { r: 1, w: 2 } }, Database: { acquireCount: { w: 4 } }, Collection: { acquireCount: { w: 4 } }, Mutex: { acquireCount: { r: 6 } } } flowControl:{ acquireCount: 1 } protocol:op_msg 0ms
+2021-07-28T22:10:28.351+0800 I  COMMAND  [conn2] command admin.$cmd appName: "MongoDB Shell" command: replSetGetStatus { replSetGetStatus: 1.0, forShell: 1.0, $clusterTime: { clusterTime: Timestamp(1627481428, 2), signature: { hash: BinData(0, BE5EA4AE0D9B036CCB0265B7010A8DF141D00EA8), keyId: 6989975324809232388 } }, $db: "admin" } numYields:0 reslen:1503 locks:{} protocol:op_msg 0ms
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+步骤6： session.endSession(); 对应日志
+
+2021-07-28T22:10:38.527+0800 I  COMMAND  [conn2] command admin.$cmd appName: "MongoDB Shell" command: endSessions { endSessions: [ { id: UUID("672a574b-3903-4112-8e9a-56dbbaad4ec8") } ], $db: "admin" } numYields:0 reslen:163 locks:{} protocol:op_msg 0ms
+2021-07-28T22:10:38.528+0800 I  COMMAND  [conn2] command admin.$cmd appName: "MongoDB Shell" command: replSetGetStatus { replSetGetStatus: 1.0, forShell: 1.0, $clusterTime: { clusterTime: Timestamp(1627481428, 2), signature: { hash: BinData(0, BE5EA4AE0D9B036CCB0265B7010A8DF141D00EA8), keyId: 6989975324809232388 } }, $db: "admin" } numYields:0 reslen:1503 locks:{} protocol:op_msg 0ms
+
+
+
+
+
+普通非事务insert的日志：
+2021-07-29T20:22:02.988+0800 I  COMMAND  [conn7] command test.test appName: "MongoDB Shell" command: insert { insert: "test", ordered: true, lsid: { id: UUID("ade0a8c9-3df3-4416-8d32-fca47a003817") }, $clusterTime: { clusterTime: Timestamp(1627561282, 1), signature: { hash: BinData(0, 3E219226894B9F8ECE82B7C8D7E736D7EEBD9C47), keyId: 6989975324809232388 } }, $db: "test" } ninserted:1 keysInserted:1 numYields:0 reslen:230 locks:{ ParallelBatchWriterMode: { acquireCount: { r: 1 } }, ReplicationStateTransition: { acquireCount: { w: 1 } }, Global: { acquireCount: { w: 1 } }, Database: { acquireCount: { w: 1 } }, Collection: { acquireCount:
+
+
+
+事务对应oplog如下：
+{ "ts" : Timestamp(1627638426, 1), "t" : NumberLong(10), "h" : NumberLong(0), "v" : 2, "op" : "c", "ns" : "admin.$cmd", "wall" : ISODate("2021-07-30T09:47:06.826Z"), "lsid" : { "id" : UUID("b9bcceb9-eb5a-4108-b069-39b295f36ce1"), "uid" : BinData(0,"Y5mrDaxi8gv8RmdTsQ+1j7fmkr7JUsabhNmXAheU0fg=") }, "txnNumber" : NumberLong(0), "prevOpTime" : { "ts" : Timestamp(0, 0), "t" : NumberLong(-1) }, "o" : { "applyOps" : [ { "op" : "i", "ns" : "mydb1.foo", "ui" : UUID("4e561ddc-f186-4e92-8cde-4772407cd6c8"), "o" : { "_id" : ObjectId("6103ca95234e86eaa07fc326"), "abc" : 1 } }, { "op" : "i", "ns" : "mydb2.bar", "ui" : UUID("6745ec24-aa02-4004-9182-1b454a0b38ec"), "o" : { "_id" : ObjectId("6103ca95234e86eaa07fc327"), "xyz" : 999 } } ] } }
+
+
+
+普通非事务insert对应oplog如下：
+{ "ts" : Timestamp(1627638572, 1), "t" : NumberLong(10), "h" : NumberLong(0), "v" : 2, "op" : "i", "ns" : "test.test", "ui" : UUID("5e08bed0-9fc3-4b83-b5d2-588821c8b2b8"), "wall" : ISODate("2021-07-30T09:49:32.778Z"), "o" : { "_id" : ObjectId("6103cb2c234e86eaa07fc328"), "xxx" : "xxxx", "age" : 1111 } }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+针对链接的事务打印：
+
+{"t":{"$date":"2021-08-08T13:02:01.119+08:00"},"s":"I",  "c":"COMMAND",  "id":51803,   "ctx":"conn43","msg":"Slow query","attr":{"type":"command","ns":"admin.$cmd","appName":"MongoDB Shell","command":{"replSetGetStatus":1.0,"forShell":1.0,"$clusterTime":{"clusterTime":{"$timestamp":{"t":1628398096,"i":2}},"signature":{"hash":{"$binary":{"base64":"P8tRFViPsnOd6+bJkQ0HeJN7F8g=","subType":"0"}},"keyId":6989971918900166658}},"$db":"admin"},"numYields":0,"reslen":1503,"locks":{},"protocol":"op_msg","durationMillis":0}}
+{"t":{"$date":"2021-08-08T13:02:01.134+08:00"},"s":"I",  "c":"COMMAND",  "id":51803,   "ctx":"conn43","msg":"Slow query","attr":{"type":"command","ns":"admin.$cmd","appName":"MongoDB Shell","command":{"replSetGetStatus":1.0,"forShell":1.0,"$clusterTime":{"clusterTime":{"$timestamp":{"t":1628398912,"i":1}},"signature":{"hash":{"$binary":{"base64":"lC7u8pbrE3ufLQcfU8Jw3odTdiE=","subType":"0"}},"keyId":6989971918900166658}},"$db":"admin"},"numYields":0,"reslen":1503,"locks":{},"protocol":"op_msg","durationMillis":0}}
+{"t":{"$date":"2021-08-08T13:02:01.224+08:00"},"s":"I",  "c":"COMMAND",  "id":51803,   "ctx":"conn43","msg":"Slow query","attr":{"type":"command","ns":"admin.$cmd","appName":"MongoDB Shell","command":{"replSetGetStatus":1.0,"forShell":1.0,"$clusterTime":{"clusterTime":{"$timestamp":{"t":1628398912,"i":1}},"signature":{"hash":{"$binary":{"base64":"lC7u8pbrE3ufLQcfU8Jw3odTdiE=","subType":"0"}},"keyId":6989971918900166658}},"$db":"admin"},"numYields":0,"reslen":1503,"locks":{},"protocol":"op_msg","durationMillis":0}}
+{"t":{"$date":"2021-08-08T13:02:01.240+08:00"},"s":"I",  "c":"COMMAND",  "id":51803,   "ctx":"conn43","msg":"Slow query","attr":{"type":"command","ns":"admin.$cmd","appName":"MongoDB Shell","command":{"replSetGetStatus":1.0,"forShell":1.0,"$clusterTime":{"clusterTime":{"$timestamp":{"t":1628398912,"i":1}},"signature":{"hash":{"$binary":{"base64":"lC7u8pbrE3ufLQcfU8Jw3odTdiE=","subType":"0"}},"keyId":6989971918900166658}},"$db":"admin"},"numYields":0,"reslen":1503,"locks":{},"protocol":"op_msg","durationMillis":0}}
+{"t":{"$date":"2021-08-08T13:02:01.257+08:00"},"s":"I",  "c":"COMMAND",  "id":51803,   "ctx":"conn43","msg":"Slow query","attr":{"type":"command","ns":"admin.$cmd","appName":"MongoDB Shell","command":{"replSetGetStatus":1.0,"forShell":1.0,"$clusterTime":{"clusterTime":{"$timestamp":{"t":1628398912,"i":1}},"signature":{"hash":{"$binary":{"base64":"lC7u8pbrE3ufLQcfU8Jw3odTdiE=","subType":"0"}},"keyId":6989971918900166658}},"$db":"admin"},"numYields":0,"reslen":1503,"locks":{},"protocol":"op_msg","durationMillis":0}}
+{"t":{"$date":"2021-08-08T13:02:01.274+08:00"},"s":"I",  "c":"COMMAND",  "id":51803,   "ctx":"conn43","msg":"Slow query","attr":{"type":"command","ns":"admin.$cmd","appName":"MongoDB Shell","command":{"replSetGetStatus":1.0,"forShell":1.0,"$clusterTime":{"clusterTime":{"$timestamp":{"t":1628398912,"i":1}},"signature":{"hash":{"$binary":{"base64":"lC7u8pbrE3ufLQcfU8Jw3odTdiE=","subType":"0"}},"keyId":6989971918900166658}},"$db":"admin"},"numYields":0,"reslen":1503,"locks":{},"protocol":"op_msg","durationMillis":0}}
+{"t":{"$date":"2021-08-08T13:02:02.216+08:00"},"s":"D3", "c":"STORAGE",  "id":22416,   "ctx":"conn43","msg":"setting timestamp read source","attr":{"readSource":"kNoTimestamp","provided":"none"}}
+{"t":{"$date":"2021-08-08T13:02:02.216+08:00"},"s":"D3", "c":"STORAGE",  "id":22414,   "ctx":"conn43","msg":"WT begin_transaction","attr":{"snapshotId":8068723,"readSource":"kNoTimestamp"}}
+{"t":{"$date":"2021-08-08T13:02:02.216+08:00"},"s":"D3", "c":"STORAGE",  "id":22413,   "ctx":"conn43","msg":"WT rollback_transaction","attr":{"snapshotId":8068724}}
+{"t":{"$date":"2021-08-08T13:02:02.217+08:00"},"s":"I",  "c":"COMMAND",  "id":51803,   "ctx":"conn43","msg":"Slow query","attr":{"type":"command","ns":"config.transactions","appName":"MongoDB Shell","command":{"find":"transactions","filter":{"_id":{"id":{"$uuid":"892bd943-28a5-401e-b833-75a0d350bd78"},"uid":{"$binary":{"base64":"Y5mrDaxi8gv8RmdTsQ+1j7fmkr7JUsabhNmXAheU0fg=","subType":"0"}}}},"readConcern":{},"ntoreturn":1,"singleBatch":true,"$db":"config"},"planSummary":"IDHACK","keysExamined":0,"docsExamined":0,"cursorExhausted":true,"numYields":0,"nreturned":0,"reslen":233,"locks":{"ReplicationStateTransition":{"acquireCount":{"w":1}},"Global":{"acquireCount":{"w":1}},"Database":{"acquireCount":{"w":1}},"Collection":{"acquireCount":{"w":1}},"Mutex":{"acquireCount":{"r":1}}},"readConcern":{"level":"local"},"storage":{},"protocol":"op_msg","durationMillis":0}}
+{"t":{"$date":"2021-08-08T13:02:02.217+08:00"},"s":"D3", "c":"STORAGE",  "id":22416,   "ctx":"conn43","msg":"setting timestamp read source","attr":{"readSource":"kNoTimestamp","provided":"none"}}
+{"t":{"$date":"2021-08-08T13:02:02.217+08:00"},"s":"D3", "c":"STORAGE",  "id":22416,   "ctx":"conn43","msg":"setting timestamp read source","attr":{"readSource":"kNoTimestamp","provided":"none"}}
+{"t":{"$date":"2021-08-08T13:02:02.217+08:00"},"s":"D3", "c":"STORAGE",  "id":22414,   "ctx":"conn43","msg":"WT begin_transaction","attr":{"snapshotId":8068726,"readSource":"kNoTimestamp"}}
+{"t":{"$date":"2021-08-08T13:02:02.217+08:00"},"s":"D2", "c":"STORAGE",  "id":22423,   "ctx":"conn43","msg":"WiredTigerSizeStorer::store Marking {uri} dirty, numRecords: {sizeInfo_numRecords_load}, dataSize: {sizeInfo_dataSize_load}, use_count: {entry_use_count}","attr":{"uri":"table:mydb1/collection/4--7603735163422428577","sizeInfo_numRecords_load":34,"sizeInfo_dataSize_load":1190,"entry_use_count":3}}
+{"t":{"$date":"2021-08-08T13:02:02.217+08:00"},"s":"I",  "c":"COMMAND",  "id":51803,   "ctx":"conn43","msg":"Slow query","attr":{"type":"command","ns":"mydb1.foo","appName":"MongoDB Shell","command":{"insert":"foo","ordered":true,"lsid":{"id":{"$uuid":"892bd943-28a5-401e-b833-75a0d350bd78"}},"$clusterTime":{"clusterTime":{"$timestamp":{"t":1628398912,"i":1}},"signature":{"hash":{"$binary":{"base64":"lC7u8pbrE3ufLQcfU8Jw3odTdiE=","subType":"0"}},"keyId":6989971918900166658}},"txnNumber":0,"autocommit":false,"stmtId":0,"startTransaction":true,"readConcern":{"level":"local"},"$db":"mydb1"},"ninserted":1,"keysInserted":1,"numYields":0,"reslen":230,"locks":{},"readConcern":{"level":"local"},"storage":{},"protocol":"op_msg","durationMillis":0}}
+{"t":{"$date":"2021-08-08T13:02:02.217+08:00"},"s":"D3", "c":"STORAGE",  "id":22414,   "ctx":"conn43","msg":"WT begin_transaction","attr":{"snapshotId":8068728,"readSource":"kNoTimestamp"}}
+{"t":{"$date":"2021-08-08T13:02:02.217+08:00"},"s":"D2", "c":"STORAGE",  "id":22423,   "ctx":"conn43","msg":"WiredTigerSizeStorer::store Marking {uri} dirty, numRecords: {sizeInfo_numRecords_load}, dataSize: {sizeInfo_dataSize_load}, use_count: {entry_use_count}","attr":{"uri":"table:mydb1/collection/6--7603735163422428577","sizeInfo_numRecords_load":47,"sizeInfo_dataSize_load":33195,"entry_use_count":3}}
+{"t":{"$date":"2021-08-08T13:02:02.217+08:00"},"s":"D3", "c":"STORAGE",  "id":22412,   "ctx":"conn43","msg":"WT commit_transaction","attr":{"snapshotId":8068729}}
+{"t":{"$date":"2021-08-08T13:02:02.217+08:00"},"s":"D3", "c":"STORAGE",  "id":22244,   "ctx":"conn43","msg":"CUSTOM COMMIT {demangleName_typeid_change}","attr":{"demangleName_typeid_change":"mongo::WiredTigerRecordStore::NumRecordsChange"}}
+{"t":{"$date":"2021-08-08T13:02:02.217+08:00"},"s":"D3", "c":"STORAGE",  "id":22244,   "ctx":"conn43","msg":"CUSTOM COMMIT {demangleName_typeid_change}","attr":{"demangleName_typeid_change":"mongo::WiredTigerRecordStore::DataSizeChange"}}
+{"t":{"$date":"2021-08-08T13:02:02.217+08:00"},"s":"D3", "c":"STORAGE",  "id":22244,   "ctx":"conn43","msg":"CUSTOM COMMIT {demangleName_typeid_change}","attr":{"demangleName_typeid_change":"mongo::RecoveryUnit::onCommit<mongo::CollectionImpl::insertDocuments(mongo::OperationContext*, __gnu_cxx::__normal_iterator<mongo::InsertStatement const*, std::vector<mongo::InsertStatement, std::allocator<mongo::InsertStatement> > >, __gnu_cxx::__normal_iterator<mongo::InsertStatement const*, std::vector<mongo::InsertStatement, std::allocator<mongo::InsertStatement> > >, mongo::OpDebug*, bool)::{lambda(boost::optional<mongo::Timestamp>)#1}>(mongo::CollectionImpl::insertDocuments(mongo::OperationContext*, __gnu_cxx::__normal_iterator<mongo::InsertStatement const*, std::vector<mongo::InsertStatement, std::allocator<mongo::InsertStatement> > >, __gnu_cxx::__normal_iterator<mongo::InsertStatement const*, std::vector<mongo::InsertStatement, std::allocator<mongo::InsertStatement> > >, mongo::OpDebug*, bool)::{lambda(boost::optional<mongo::Timestamp>)#1})::OnCommitChange"}}
+{"t":{"$date":"2021-08-08T13:02:02.218+08:00"},"s":"D2", "c":"STORAGE",  "id":22423,   "ctx":"conn43","msg":"WiredTigerSizeStorer::store Marking {uri} dirty, numRecords: {sizeInfo_numRecords_load}, dataSize: {sizeInfo_dataSize_load}, use_count: {entry_use_count}","attr":{"uri":"table:mydb2/collection/7--7603735163422428577","sizeInfo_numRecords_load":34,"sizeInfo_dataSize_load":1190,"entry_use_count":3}}
+{"t":{"$date":"2021-08-08T13:02:02.218+08:00"},"s":"I",  "c":"COMMAND",  "id":51803,   "ctx":"conn43","msg":"Slow query","attr":{"type":"command","ns":"mydb2.bar","appName":"MongoDB Shell","command":{"insert":"bar","ordered":true,"lsid":{"id":{"$uuid":"892bd943-28a5-401e-b833-75a0d350bd78"}},"$clusterTime":{"clusterTime":{"$timestamp":{"t":1628398921,"i":1}},"signature":{"hash":{"$binary":{"base64":"6i12Gnu/EYf7B/8+DWG/PbAd71c=","subType":"0"}},"keyId":6989971918900166658}},"txnNumber":0,"autocommit":false,"stmtId":1,"$db":"mydb2"},"ninserted":1,"keysInserted":1,"numYields":0,"reslen":230,"locks":{},"readConcern":{"level":"local"},"storage":{},"protocol":"op_msg","durationMillis":0}}
+{"t":{"$date":"2021-08-08T13:02:02.218+08:00"},"s":"D3", "c":"STORAGE",  "id":22414,   "ctx":"conn43","msg":"WT begin_transaction","attr":{"snapshotId":8068734,"readSource":"kNoTimestamp"}}
+{"t":{"$date":"2021-08-08T13:02:02.218+08:00"},"s":"D2", "c":"STORAGE",  "id":22423,   "ctx":"conn43","msg":"WiredTigerSizeStorer::store Marking {uri} dirty, numRecords: {sizeInfo_numRecords_load}, dataSize: {sizeInfo_dataSize_load}, use_count: {entry_use_count}","attr":{"uri":"table:mydb2/collection/9--7603735163422428577","sizeInfo_numRecords_load":44,"sizeInfo_dataSize_load":27734,"entry_use_count":3}}
+{"t":{"$date":"2021-08-08T13:02:02.218+08:00"},"s":"D3", "c":"STORAGE",  "id":22412,   "ctx":"conn43","msg":"WT commit_transaction","attr":{"snapshotId":8068735}}
+{"t":{"$date":"2021-08-08T13:02:02.218+08:00"},"s":"D3", "c":"STORAGE",  "id":22244,   "ctx":"conn43","msg":"CUSTOM COMMIT {demangleName_typeid_change}","attr":{"demangleName_typeid_change":"mongo::WiredTigerRecordStore::NumRecordsChange"}}
+{"t":{"$date":"2021-08-08T13:02:02.218+08:00"},"s":"D3", "c":"STORAGE",  "id":22244,   "ctx":"conn43","msg":"CUSTOM COMMIT {demangleName_typeid_change}","attr":{"demangleName_typeid_change":"mongo::WiredTigerRecordStore::DataSizeChange"}}
+{"t":{"$date":"2021-08-08T13:02:02.218+08:00"},"s":"D3", "c":"STORAGE",  "id":22244,   "ctx":"conn43","msg":"CUSTOM COMMIT {demangleName_typeid_change}","attr":{"demangleName_typeid_change":"mongo::RecoveryUnit::onCommit<mongo::CollectionImpl::insertDocuments(mongo::OperationContext*, __gnu_cxx::__normal_iterator<mongo::InsertStatement const*, std::vector<mongo::InsertStatement, std::allocator<mongo::InsertStatement> > >, __gnu_cxx::__normal_iterator<mongo::InsertStatement const*, std::vector<mongo::InsertStatement, std::allocator<mongo::InsertStatement> > >, mongo::OpDebug*, bool)::{lambda(boost::optional<mongo::Timestamp>)#1}>(mongo::CollectionImpl::insertDocuments(mongo::OperationContext*, __gnu_cxx::__normal_iterator<mongo::InsertStatement const*, std::vector<mongo::InsertStatement, std::allocator<mongo::InsertStatement> > >, __gnu_cxx::__normal_iterator<mongo::InsertStatement const*, std::vector<mongo::InsertStatement, std::allocator<mongo::InsertStatement> > >, mongo::OpDebug*, bool)::{lambda(boost::optional<mongo::Timestamp>)#1})::OnCommitChange"}}
+{"t":{"$date":"2021-08-08T13:02:02.218+08:00"},"s":"I",  "c":"COMMAND",  "id":51803,   "ctx":"conn43","msg":"Slow query","attr":{"type":"command","ns":"admin.$cmd","appName":"MongoDB Shell","command":{"replSetGetStatus":1.0,"forShell":1.0,"$clusterTime":{"clusterTime":{"$timestamp":{"t":1628398921,"i":1}},"signature":{"hash":{"$binary":{"base64":"6i12Gnu/EYf7B/8+DWG/PbAd71c=","subType":"0"}},"keyId":6989971918900166658}},"$db":"admin"},"numYields":0,"reslen":1503,"locks":{},"protocol":"op_msg","durationMillis":0}}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+{"t":{"$date":"2021-08-08T13:02:11.899+08:00"},"s":"D3", "c":"TXN",      "id":20507,   "ctx":"conn43","msg":"Received commitTransaction","attr":{"txnNumber":0,"sessionId":{"id":{"$uuid":"892bd943-28a5-401e-b833-75a0d350bd78"},"uid":{"$binary":{"base64":"Y5mrDaxi8gv8RmdTsQ+1j7fmkr7JUsabhNmXAheU0fg=","subType":"0"}}}}}
+{"t":{"$date":"2021-08-08T13:02:11.899+08:00"},"s":"D3", "c":"STORAGE",  "id":22415,   "ctx":"conn43","msg":"WT set timestamp of future write operations to {timestamp}","attr":{"timestamp":{"$timestamp":{"t":1628398931,"i":1}}}}
+{"t":{"$date":"2021-08-08T13:02:11.899+08:00"},"s":"D3", "c":"STORAGE",  "id":22415,   "ctx":"conn43","msg":"WT set timestamp of future write operations to {timestamp}","attr":{"timestamp":{"$timestamp":{"t":1628398931,"i":1}}}}
+{"t":{"$date":"2021-08-08T13:02:11.899+08:00"},"s":"D2", "c":"STORAGE",  "id":22423,   "ctx":"conn43","msg":"WiredTigerSizeStorer::store Marking {uri} dirty, numRecords: {sizeInfo_numRecords_load}, dataSize: {sizeInfo_dataSize_load}, use_count: {entry_use_count}","attr":{"uri":"table:local/collection/8--7307211975225495044","sizeInfo_numRecords_load":27017,"sizeInfo_dataSize_load":2808808,"entry_use_count":3}}
+{"t":{"$date":"2021-08-08T13:02:11.899+08:00"},"s":"D2", "c":"STORAGE",  "id":22423,   "ctx":"conn43","msg":"WiredTigerSizeStorer::store Marking {uri} dirty, numRecords: {sizeInfo_numRecords_load}, dataSize: {sizeInfo_dataSize_load}, use_count: {entry_use_count}","attr":{"uri":"table:config/collection/12--7307211975225495044","sizeInfo_numRecords_load":11,"sizeInfo_dataSize_load":2057,"entry_use_count":3}}
+{"t":{"$date":"2021-08-08T13:02:11.899+08:00"},"s":"D1", "c":"STORAGE",  "id":22411,   "ctx":"conn43","msg":"Slow WT transaction. Lifetime of SnapshotId {getSnapshotId_toNumber} was {transactionTime}ms","attr":{"getSnapshotId_toNumber":8069023,"transactionTime":9682}}
+{"t":{"$date":"2021-08-08T13:02:11.899+08:00"},"s":"D3", "c":"STORAGE",  "id":22412,   "ctx":"conn43","msg":"WT commit_transaction","attr":{"snapshotId":8069023}}
+{"t":{"$date":"2021-08-08T13:02:11.899+08:00"},"s":"D3", "c":"STORAGE",  "id":22244,   "ctx":"conn43","msg":"CUSTOM COMMIT {demangleName_typeid_change}","attr":{"demangleName_typeid_change":"mongo::WiredTigerRecordStore::NumRecordsChange"}}
+{"t":{"$date":"2021-08-08T13:02:11.899+08:00"},"s":"D3", "c":"STORAGE",  "id":22244,   "ctx":"conn43","msg":"CUSTOM COMMIT {demangleName_typeid_change}","attr":{"demangleName_typeid_change":"mongo::WiredTigerRecordStore::DataSizeChange"}}
+{"t":{"$date":"2021-08-08T13:02:11.899+08:00"},"s":"D3", "c":"STORAGE",  "id":22244,   "ctx":"conn43","msg":"CUSTOM COMMIT {demangleName_typeid_change}","attr":{"demangleName_typeid_change":"mongo::RecoveryUnit::onCommit<mongo::CollectionImpl::insertDocuments(mongo::OperationContext*, __gnu_cxx::__normal_iterator<mongo::InsertStatement const*, std::vector<mongo::InsertStatement, std::allocator<mongo::InsertStatement> > >, __gnu_cxx::__normal_iterator<mongo::InsertStatement const*, std::vector<mongo::InsertStatement, std::allocator<mongo::InsertStatement> > >, mongo::OpDebug*, bool)::{lambda(boost::optional<mongo::Timestamp>)#1}>(mongo::CollectionImpl::insertDocuments(mongo::OperationContext*, __gnu_cxx::__normal_iterator<mongo::InsertStatement const*, std::vector<mongo::InsertStatement, std::allocator<mongo::InsertStatement> > >, __gnu_cxx::__normal_iterator<mongo::InsertStatement const*, std::vector<mongo::InsertStatement, std::allocator<mongo::InsertStatement> > >, mongo::OpDebug*, bool)::{lambda(boost::optional<mongo::Timestamp>)#1})::OnCommitChange"}}
+{"t":{"$date":"2021-08-08T13:02:11.899+08:00"},"s":"D3", "c":"STORAGE",  "id":22244,   "ctx":"conn43","msg":"CUSTOM COMMIT {demangleName_typeid_change}","attr":{"demangleName_typeid_change":"mongo::WiredTigerRecordStore::NumRecordsChange"}}
+{"t":{"$date":"2021-08-08T13:02:11.899+08:00"},"s":"D3", "c":"STORAGE",  "id":22244,   "ctx":"conn43","msg":"CUSTOM COMMIT {demangleName_typeid_change}","attr":{"demangleName_typeid_change":"mongo::WiredTigerRecordStore::DataSizeChange"}}
+{"t":{"$date":"2021-08-08T13:02:11.899+08:00"},"s":"D3", "c":"STORAGE",  "id":22244,   "ctx":"conn43","msg":"CUSTOM COMMIT {demangleName_typeid_change}","attr":{"demangleName_typeid_change":"mongo::RecoveryUnit::onCommit<mongo::CollectionImpl::insertDocuments(mongo::OperationContext*, __gnu_cxx::__normal_iterator<mongo::InsertStatement const*, std::vector<mongo::InsertStatement, std::allocator<mongo::InsertStatement> > >, __gnu_cxx::__normal_iterator<mongo::InsertStatement const*, std::vector<mongo::InsertStatement, std::allocator<mongo::InsertStatement> > >, mongo::OpDebug*, bool)::{lambda(boost::optional<mongo::Timestamp>)#1}>(mongo::CollectionImpl::insertDocuments(mongo::OperationContext*, __gnu_cxx::__normal_iterator<mongo::InsertStatement const*, std::vector<mongo::InsertStatement, std::allocator<mongo::InsertStatement> > >, __gnu_cxx::__normal_iterator<mongo::InsertStatement const*, std::vector<mongo::InsertStatement, std::allocator<mongo::InsertStatement> > >, mongo::OpDebug*, bool)::{lambda(boost::optional<mongo::Timestamp>)#1})::OnCommitChange"}}
+{"t":{"$date":"2021-08-08T13:02:11.900+08:00"},"s":"D3", "c":"STORAGE",  "id":22244,   "ctx":"conn43","msg":"CUSTOM COMMIT {demangleName_typeid_change}","attr":{"demangleName_typeid_change":"mongo::RecoveryUnit::onRollback<mongo::repl::LocalOplogInfo::getNextOpTimes(mongo::OperationContext*, unsigned long)::{lambda()#2}>(mongo::repl::LocalOplogInfo::getNextOpTimes(mongo::OperationContext*, unsigned long)::{lambda()#2})::OnRollbackChange"}}
+{"t":{"$date":"2021-08-08T13:02:11.900+08:00"},"s":"D3", "c":"STORAGE",  "id":22244,   "ctx":"conn43","msg":"CUSTOM COMMIT {demangleName_typeid_change}","attr":{"demangleName_typeid_change":"mongo::WiredTigerRecordStore::NumRecordsChange"}}
+{"t":{"$date":"2021-08-08T13:02:11.900+08:00"},"s":"D3", "c":"STORAGE",  "id":22244,   "ctx":"conn43","msg":"CUSTOM COMMIT {demangleName_typeid_change}","attr":{"demangleName_typeid_change":"mongo::WiredTigerRecordStore::DataSizeChange"}}
+{"t":{"$date":"2021-08-08T13:02:11.900+08:00"},"s":"D3", "c":"STORAGE",  "id":22244,   "ctx":"conn43","msg":"CUSTOM COMMIT {demangleName_typeid_change}","attr":{"demangleName_typeid_change":"mongo::WiredTigerRecordStore::OplogStones::InsertChange"}}
+{"t":{"$date":"2021-08-08T13:02:11.900+08:00"},"s":"D3", "c":"STORAGE",  "id":22244,   "ctx":"conn43","msg":"CUSTOM COMMIT {demangleName_typeid_change}","attr":{"demangleName_typeid_change":"mongo::RecoveryUnit::onCommit<mongo::CollectionImpl::insertDocumentsForOplog(mongo::OperationContext*, std::vector<mongo::Record, std::allocator<mongo::Record> >*, std::vector<mongo::Timestamp, std::allocator<mongo::Timestamp> > const&)::{lambda(boost::optional<mongo::Timestamp>)#1}>(mongo::CollectionImpl::insertDocumentsForOplog(mongo::OperationContext*, std::vector<mongo::Record, std::allocator<mongo::Record> >*, std::vector<mongo::Timestamp, std::allocator<mongo::Timestamp> > const&)::{lambda(boost::optional<mongo::Timestamp>)#1})::OnCommitChange"}}
+{"t":{"$date":"2021-08-08T13:02:11.901+08:00"},"s":"D3", "c":"STORAGE",  "id":22244,   "ctx":"conn43","msg":"CUSTOM COMMIT {demangleName_typeid_change}","attr":{"demangleName_typeid_change":"mongo::RecoveryUnit::onCommit<mongo::repl::_logOpsInner(mongo::OperationContext*, mongo::NamespaceString const&, std::vector<mongo::Record, std::allocator<mongo::Record> >*, std::vector<mongo::Timestamp, std::allocator<mongo::Timestamp> > const&, mongo::Collection*, mongo::repl::OpTime, mongo::Date_t)::{lambda(boost::optional<mongo::Timestamp>)#3}>(mongo::repl::_logOpsInner(mongo::OperationContext*, mongo::NamespaceString const&, std::vector<mongo::Record, std::allocator<mongo::Record> >*, std::vector<mongo::Timestamp, std::allocator<mongo::Timestamp> > const&, mongo::Collection*, mongo::repl::OpTime, mongo::Date_t)::{lambda(boost::optional<mongo::Timestamp>)#3})::OnCommitChange"}}
+{"t":{"$date":"2021-08-08T13:02:11.901+08:00"},"s":"D3", "c":"STORAGE",  "id":22244,   "ctx":"conn43","msg":"CUSTOM COMMIT {demangleName_typeid_change}","attr":{"demangleName_typeid_change":"mongo::WiredTigerRecordStore::NumRecordsChange"}}
+{"t":{"$date":"2021-08-08T13:02:11.901+08:00"},"s":"D3", "c":"STORAGE",  "id":22244,   "ctx":"conn43","msg":"CUSTOM COMMIT {demangleName_typeid_change}","attr":{"demangleName_typeid_change":"mongo::WiredTigerRecordStore::DataSizeChange"}}
+{"t":{"$date":"2021-08-08T13:02:11.901+08:00"},"s":"D3", "c":"STORAGE",  "id":22244,   "ctx":"conn43","msg":"CUSTOM COMMIT {demangleName_typeid_change}","attr":{"demangleName_typeid_change":"mongo::RecoveryUnit::onCommit<mongo::CollectionImpl::insertDocuments(mongo::OperationContext*, __gnu_cxx::__normal_iterator<mongo::InsertStatement const*, std::vector<mongo::InsertStatement, std::allocator<mongo::InsertStatement> > >, __gnu_cxx::__normal_iterator<mongo::InsertStatement const*, std::vector<mongo::InsertStatement, std::allocator<mongo::InsertStatement> > >, mongo::OpDebug*, bool)::{lambda(boost::optional<mongo::Timestamp>)#1}>(mongo::CollectionImpl::insertDocuments(mongo::OperationContext*, __gnu_cxx::__normal_iterator<mongo::InsertStatement const*, std::vector<mongo::InsertStatement, std::allocator<mongo::InsertStatement> > >, __gnu_cxx::__normal_iterator<mongo::InsertStatement const*, std::vector<mongo::InsertStatement, std::allocator<mongo::InsertStatement> > >, mongo::OpDebug*, bool)::{lambda(boost::optional<mongo::Timestamp>)#1})::OnCommitChange"}}
+{"t":{"$date":"2021-08-08T13:02:11.902+08:00"},"s":"D3", "c":"STORAGE",  "id":22244,   "ctx":"conn43","msg":"CUSTOM COMMIT {demangleName_typeid_change}","attr":{"demangleName_typeid_change":"mongo::RecoveryUnit::onCommit<mongo::TransactionParticipant::Participant::_registerUpdateCacheOnCommit(mongo::OperationContext*, std::vector<int, std::allocator<int> >, mongo::repl::OpTime const&)::{lambda(boost::optional<mongo::Timestamp>)#1}>(mongo::TransactionParticipant::Participant::_registerUpdateCacheOnCommit(mongo::OperationContext*, std::vector<int, std::allocator<int> >, mongo::repl::OpTime const&)::{lambda(boost::optional<mongo::Timestamp>)#1})::OnCommitChange"}}
+{"t":{"$date":"2021-08-08T13:02:11.902+08:00"},"s":"I",  "c":"TXN",      "id":51802,   "ctx":"conn43","msg":"transaction","attr":{"parameters":{"lsid":{"id":{"$uuid":"892bd943-28a5-401e-b833-75a0d350bd78"},"uid":{"$binary":{"base64":"Y5mrDaxi8gv8RmdTsQ+1j7fmkr7JUsabhNmXAheU0fg=","subType":"0"}}},"txnNumber":0,"autocommit":false,"readConcern":{"level":"local"}},"readTimestamp":"Timestamp(0, 0)","ninserted":2,"keysInserted":2,"terminationCause":"committed","timeActiveMicros":2848,"timeInactiveMicros":9682394,"numYields":0,"locks":{"ReplicationStateTransition":{"acquireCount":{"w":4}},"Global":{"acquireCount":{"r":1,"w":2}},"Database":{"acquireCount":{"w":4}},"Collection":{"acquireCount":{"w":4}},"Mutex":{"acquireCount":{"r":4}}},"storage":{},"wasPrepared":false,"durationMillis":9685}}
+{"t":{"$date":"2021-08-08T13:02:11.902+08:00"},"s":"D3", "c":"STORAGE",  "id":22414,   "ctx":"conn43","msg":"WT begin_transaction","attr":{"snapshotId":8069025,"readSource":"kNoTimestamp"}}
+{"t":{"$date":"2021-08-08T13:02:11.902+08:00"},"s":"D3", "c":"STORAGE",  "id":22413,   "ctx":"conn43","msg":"WT rollback_transaction","attr":{"snapshotId":8069026}}
+{"t":{"$date":"2021-08-08T13:02:11.902+08:00"},"s":"D2", "c":"STORAGE",  "id":22371,   "ctx":"conn43","msg":"Operation is waiting for an entry to become visible in the oplog.","attr":{"awaitedOplogEntryTimestamp":{"$timestamp":{"t":1628398931,"i":1}},"currentLatestVisibleOplogEntryTimestamp":{"$timestamp":{"t":1628398921,"i":1}}}}
+{"t":{"$date":"2021-08-08T13:02:11.902+08:00"},"s":"D2", "c":"STORAGE",  "id":22371,   "ctx":"conn43","msg":"Operation is waiting for an entry to become visible in the oplog.","attr":{"awaitedOplogEntryTimestamp":{"$timestamp":{"t":1628398931,"i":1}},"currentLatestVisibleOplogEntryTimestamp":{"$timestamp":{"t":1628398921,"i":1}}}}
+{"t":{"$date":"2021-08-08T13:02:11.907+08:00"},"s":"I",  "c":"COMMAND",  "id":51803,   "ctx":"conn43","msg":"Slow query","attr":{"type":"command","ns":"admin.$cmd","appName":"MongoDB Shell","command":{"commitTransaction":1.0,"txnNumber":0,"writeConcern":{"w":"majority"},"lsid":{"id":{"$uuid":"892bd943-28a5-401e-b833-75a0d350bd78"}},"$clusterTime":{"clusterTime":{"$timestamp":{"t":1628398921,"i":1}},"signature":{"hash":{"$binary":{"base64":"6i12Gnu/EYf7B/8+DWG/PbAd71c=","subType":"0"}},"keyId":6989971918900166658}},"autocommit":false,"stmtId":2,"$db":"admin"},"numYields":0,"reslen":163,"locks":{"ReplicationStateTransition":{"acquireCount":{"w":5}},"Global":{"acquireCount":{"r":2,"w":2}},"Database":{"acquireCount":{"w":4}},"Collection":{"acquireCount":{"w":4}},"Mutex":{"acquireCount":{"r":4}}},"flowControl":{"acquireCount":1,"timeAcquiringMicros":1},"readConcern":{"level":"local"},"writeConcern":{"w":"majority","wtimeout":0},"storage":{},"protocol":"op_msg","durationMillis":7}}
+{"t":{"$date":"2021-08-08T13:02:11.907+08:00"},"s":"I",  "c":"COMMAND",  "id":51803,   "ctx":"conn43","msg":"Slow query","attr":{"type":"command","ns":"admin.$cmd","appName":"MongoDB Shell","command":{"replSetGetStatus":1.0,"forShell":1.0,"$clusterTime":{"clusterTime":{"$timestamp":{"t":1628398931,"i":2}},"signature":{"hash":{"$binary":{"base64":"Lx/0DkecNkiUjognymyYPBvcYLQ=","subType":"0"}},"keyId":6989971918900166658}},"$db":"admin"},"numYields":0,"reslen":1503,"locks":{},"protocol":"op_msg","durationMillis":0}}
+{"t":{"$date":"2021-08-08T13:02:11.911+08:00"},"s":"I",  "c":"COMMAND",  "id":51803,   "ctx":"conn43","msg":"Slow query","attr":{"type":"command","ns":"admin.$cmd","appName":"MongoDB Shell","command":{"endSessions":[{"id":{"$uuid":"892bd943-28a5-401e-b833-75a0d350bd78"}}],"$db":"admin"},"numYields":0,"reslen":163,"locks":{},"protocol":"op_msg","durationMillis":0}}
+{"t":{"$date":"2021-08-08T13:02:11.912+08:00"},"s":"I",  "c":"COMMAND",  "id":51803,   "ctx":"conn43","msg":"Slow query","attr":{"type":"command","ns":"admin.$cmd","appName":"MongoDB Shell","command":{"replSetGetStatus":1.0,"forShell":1.0,"$clusterTime":{"clusterTime":{"$timestamp":{"t":1628398931,"i":2}},"signature":{"hash":{"$binary":{"base64":"Lx/0DkecNkiUjognymyYPBvcYLQ=","subType":"0"}},"keyId":6989971918900166658}},"$db":"admin"},"numYields":0,"reslen":1503,"locks":{},"protocol":"op_msg","durationMillis":0}}
+
