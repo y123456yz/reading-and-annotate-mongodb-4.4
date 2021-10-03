@@ -115,6 +115,17 @@ SessionKiller::Result killSessionsLocal(OperationContext* opCtx,
     return {std::vector<HostAndPort>{}};
 }
 
+
+/*
+不采用 「Query Yielding」也就意味着存在上节所说的“WiredTiger Cache 压力过大”的问题，在 “snapshot” readConcern 下，
+当前版本没有太好的解法（在 4.4 中会通过 durable history，即支持把多版本数据写到磁盘，而不是只保存在内存中来解决这个问题）。
+MongoDB 目前采用了另外一个比较简单粗暴的方式来缓解这个问题，即限制事务执行的时长，transactionLifetimeLimitSeconds 配置
+的值决定了多文档事务的最大执行时长，默认为 60 秒。
+
+超出最大执行时长的事务由后台线程负责清理，默认每 30 秒进行一次清理动作。每个多文档事务都会和一个 Logical Session 关联，
+清理线程会遍历内存中的 SessionCatalog 缓存找到所有过期事务，清理和事务关联的 Session，然后 abortTransaction（具体可参
+考killAllExpiredTransactions()）。
+*/
 void killAllExpiredTransactions(OperationContext* opCtx) {
     SessionKiller::Matcher matcherAllSessions(
         KillAllSessionsByPatternSet{makeKillAllSessionsByPattern(opCtx)});

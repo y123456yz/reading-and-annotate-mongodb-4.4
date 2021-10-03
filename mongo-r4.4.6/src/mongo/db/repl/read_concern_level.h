@@ -44,12 +44,17 @@ enum class ReadConcernLevel {
 
 namespace readConcernLevels {
 
+//¹ÙÍø https://docs.mongodb.com/v4.4/reference/read-concern/
+//²Î¿¼ https://mongoing.com/archives/77853
 constexpr std::initializer_list<ReadConcernLevel> all = {ReadConcernLevel::kLocalReadConcern,
                                                          ReadConcernLevel::kMajorityReadConcern,
                                                          ReadConcernLevel::kLinearizableReadConcern,
                                                          ReadConcernLevel::kAvailableReadConcern,
                                                          ReadConcernLevel::kSnapshotReadConcern};
 
+
+//¹ÙÍø https://docs.mongodb.com/v4.2/reference/read-concern/
+//²Î¿¼ https://mongoing.com/archives/77853
 constexpr StringData kLocalName = "local"_sd;
 constexpr StringData kMajorityName = "majority"_sd;
 constexpr StringData kLinearizableName = "linearizable"_sd;

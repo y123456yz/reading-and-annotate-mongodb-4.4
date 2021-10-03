@@ -41,6 +41,7 @@ namespace repl {
  * This class represents the interface BackgroundSync and ReplicationCoordinatorExternalState use to
  * interact with the rollback subsystem.
  */
+//roll back ²Î¿¼https://mongoing.com/archives/77853
 class Rollback {
     Rollback(const Rollback&) = delete;
     Rollback& operator=(const Rollback&) = delete;

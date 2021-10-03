@@ -274,7 +274,7 @@ StatusWith<repl::ReadConcernArgs> _extractReadConcern(OperationContext* opCtx,
     if (readConcernSupport.defaultReadConcernPermit.isOK() &&
         (startTransaction || !opCtx->inMultiDocumentTransaction()) &&
         repl::ReplicationCoordinator::get(opCtx)->isReplEnabled() &&
-        !opCtx->getClient()->isInDirectClient()) {
+        !opCtx->getClient()->isInDirectClient()) { 
 
         if (serverGlobalParams.featureCompatibility.isVersion(
                 ServerGlobalParams::FeatureCompatibility::Version::kFullyUpgradedTo44)) {

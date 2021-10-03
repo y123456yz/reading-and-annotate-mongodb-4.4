@@ -105,6 +105,8 @@ LogicalTime LogicalClock::reserveTicks(uint64_t nTicks) {
 
     invariant(nTicks > 0 && nTicks <= kMaxSignedInt);
 
+	//注意这里会加锁 
+	//获取这个 ts 是需要加锁的，避免并发的写操作产生同样的 ts
     stdx::lock_guard<Latch> lock(_mutex);
 
     LogicalTime clusterTime = _clusterTime;

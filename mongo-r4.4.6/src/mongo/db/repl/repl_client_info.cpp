@@ -60,6 +60,7 @@ bool ReplClientInfo::lastOpWasSetExplicitlyByClientForCurrentOperation(
     return lastOpInfo(opCtx).lastOpSetExplicitly;
 }
 
+//// mongo::RecoveryUnit::OnCommitChange::commit -> mongo::repl::ReplClientInfo::setLastOp
 void ReplClientInfo::setLastOp(OperationContext* opCtx, const OpTime& ot) {
     invariant(ot >= _lastOp);
     _lastOp = ot;

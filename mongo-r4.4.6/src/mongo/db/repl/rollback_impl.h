@@ -53,6 +53,7 @@ class ReplicationProcess;
  * Because it is possible for rollback to exit early, fields are initialized to boost::none and are
  * populated with actual values during the rollback process.
  */
+//
 struct RollbackStats {
     /**
      * The wall clock time when rollback started.
@@ -156,6 +157,7 @@ struct RollbackStats {
  * get closed and finding the common point should fail.
  *
  */
+//roll back ²Î¿¼https://mongoing.com/archives/77853
 class RollbackImpl : public Rollback {
 public:
     /**

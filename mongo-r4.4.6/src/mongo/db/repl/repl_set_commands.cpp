@@ -701,6 +701,17 @@ bool replHasDatabases(OperationContext* opCtx) {
 
 MONGO_FAIL_POINT_DEFINE(rsDelayHeartbeatResponse);
 
+//副本集通过TopologyCoordinator::updateLastCommittedOpTimeAndWallTime推进majority commit point，从节点通过
+//  replSetHeartBeat节点保活(每个副本集节点都会每 2 秒向其他成员发送心跳),Secondary 节点会根据其中的 lastOpCommitted 
+//  直接推进自己的 mcp ,信息内容$replData: { term: 147, lastOpCommitted: { ts: Timestamp(1598455722, 1), t: 147 } 
+//  基于心跳机制的 mcp 推进方式，显然实时性是不够的，Primary 计算出新的 mcp 后，最多要等 2 秒,MongoDB 在 oplog 增量
+//  同步的过程中，upstream 同样会在向 downstream 返回的 oplog batch 中夹带 $replData 元信息，下游节点收到这个信息后
+//  同样会根据其中的 lastOpCommitted 直接推进自己的 mcp, Secondary 节点的 oplog fetcher 线程是持续不断的从上游拉取
+//  oplog，只要有新的写入，导致 Primary mcp 推进，那么下游就会立刻拉取新的 oplog，可以保证在 ms 级别同步推进自己的 mcp
+//  另外一点需要说明的是，心跳回复中实际上也包含了目标节点的 lastAppliedOpTime 和 lastDurableOpTime 信息，但是 Secondary
+//  节点并不会根据这些信息自行计算新的 mcp，而是总是等待 Primary 把 lastOpCommittedOpTime 传播过来，直接 set 自己的 mcp。
+//  参考https://mongoing.com/archives/77853
+
 /* { replSetHeartbeat : <setname> } */
 class CmdReplSetHeartbeat : public ReplSetCommand {
 public:

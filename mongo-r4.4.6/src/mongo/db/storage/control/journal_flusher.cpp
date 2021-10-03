@@ -73,6 +73,8 @@ void JournalFlusher::set(ServiceContext* serviceCtx, std::unique_ptr<JournalFlus
     journalFlusher = std::move(flusher);
 }
 
+
+//startStorageControls->BackgroundJob::go()->BackgroundJob::jobBody()
 void JournalFlusher::run() {
     ThreadClient tc(name(), getGlobalServiceContext());
     LOGV2_DEBUG(4584701, 1, "starting {name} thread", "name"_attr = name());

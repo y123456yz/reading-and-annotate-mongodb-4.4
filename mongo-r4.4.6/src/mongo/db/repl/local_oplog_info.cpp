@@ -130,7 +130,7 @@ std::vector<OplogSlot> LocalOplogInfo::getNextOpTimes(OperationContext* opCtx, s
     opCtx->recoveryUnit()->preallocateSnapshot();
     {
         stdx::lock_guard<Latch> lk(_newOpMutex);
-
+		//注意这里面会加锁
         ts = LogicalClock::get(opCtx)->reserveTicks(count).asTimestamp();
         const bool orderedCommit = false;
 

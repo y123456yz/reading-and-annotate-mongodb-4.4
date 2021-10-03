@@ -457,6 +457,19 @@ Status waitForLinearizableReadConcernImpl(OperationContext* opCtx, const int rea
                 PrepareConflictBehavior::kIgnoreConflictsAllowWrites);
         }
 
+		/*
+		MongoDB 是如何实现 “linearizable” readConcern，即更高级别的线性一致性呢？ MongoDB 的策略很简单，就是把它退化到几乎
+		  是单机环境下的问题，即只允许客户端在 Primary 节点上进行 “linearizable” 读。说是“几乎”，因为这个策略仍然需要解
+		  决如下两个在副本集这个分布式环境下存在的问题，
+
+		Primary 角色可能会发生变化，“linearizable” readConcern 需要保证每次读取总是能够从当前的 Primary 读取，而不是被取代的旧主。
+		需要保证读取到读操作开始前最新的写，而且读到的结果不会在重新选主后发生回滚。
+		MongoDB 采用同一个手段解决了上述两个问题，当客户端采用 “linearizable” readConcern 时，在读取完 Primary 上最新的数据后，在
+		返回前会向 Oplog 中显示的写一条 noop 的操作，然后等待这条操作在多数派节点复制成功。显然，如果当前读取的节点并不是真正的主，
+		那么这条 noop 操作就不可能在 majority 节点复制成功，同时，如果 noop 操作在 majority 节点复制成功，也就意味着之前读取的在 
+		noop 之前写入的数据也已经复制到多数派节点，确保了读到的数据不会被回滚。
+		参考https://mongoing.com/archives/77853
+		*/
         writeConflictRetry(
             opCtx,
             "waitForLinearizableReadConcern",
@@ -483,6 +496,7 @@ Status waitForLinearizableReadConcernImpl(OperationContext* opCtx, const int rea
     return awaitReplResult.status;
 }
 
+//Speculative Read 
 Status waitForSpeculativeMajorityReadConcernImpl(
     OperationContext* opCtx, repl::SpeculativeMajorityReadInfo speculativeReadInfo) {
     invariant(speculativeReadInfo.isSpeculativeRead());
@@ -538,6 +552,20 @@ auto setPrepareConflictBehaviorForReadConcernRegistration = MONGO_WEAK_FUNCTION_
     setPrepareConflictBehaviorForReadConcern, setPrepareConflictBehaviorForReadConcernImpl);
 auto waitForReadConcernRegistration =
     MONGO_WEAK_FUNCTION_REGISTRATION(waitForReadConcern, waitForReadConcernImpl);
+
+/*
+MongoDB 是如何实现 “linearizable” readConcern，即更高级别的线性一致性呢？ MongoDB 的策略很简单，就是把它退化到几乎
+  是单机环境下的问题，即只允许客户端在 Primary 节点上进行 “linearizable” 读。说是“几乎”，因为这个策略仍然需要解
+  决如下两个在副本集这个分布式环境下存在的问题，
+
+Primary 角色可能会发生变化，“linearizable” readConcern 需要保证每次读取总是能够从当前的 Primary 读取，而不是被取代的旧主。
+需要保证读取到读操作开始前最新的写，而且读到的结果不会在重新选主后发生回滚。
+MongoDB 采用同一个手段解决了上述两个问题，当客户端采用 “linearizable” readConcern 时，在读取完 Primary 上最新的数据后，在
+返回前会向 Oplog 中显示的写一条 noop 的操作，然后等待这条操作在多数派节点复制成功。显然，如果当前读取的节点并不是真正的主，
+那么这条 noop 操作就不可能在 majority 节点复制成功，同时，如果 noop 操作在 majority 节点复制成功，也就意味着之前读取的在 
+noop 之前写入的数据也已经复制到多数派节点，确保了读到的数据不会被回滚。
+参考https://mongoing.com/archives/77853
+*/
 auto waitForLinearizableReadConcernRegistration = MONGO_WEAK_FUNCTION_REGISTRATION(
     waitForLinearizableReadConcern, waitForLinearizableReadConcernImpl);
 auto waitForSpeculativeMajorityReadConcernRegistration = MONGO_WEAK_FUNCTION_REGISTRATION(

@@ -2133,7 +2133,7 @@ void WiredTigerRecordStore::cappedTruncateAfter(OperationContext* opCtx,
 Status WiredTigerRecordStore::oplogDiskLocRegister(OperationContext* opCtx,
                                                    const Timestamp& ts,
                                                    bool orderedCommit) {
-    //wiredTiger_recovery_unit.h中的setOrderedCommit
+    //wiredTiger_recovery_unit.h中的setOrderedCommit,接口啥也没做
     opCtx->recoveryUnit()->setOrderedCommit(orderedCommit);
 
     if (!orderedCommit) {

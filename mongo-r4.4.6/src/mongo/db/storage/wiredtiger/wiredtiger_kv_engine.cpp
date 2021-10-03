@@ -306,6 +306,7 @@ public:
 
             const Date_t startTime = Date_t::now();
 
+			//参考https://mongoing.com/archives/77853   Recover To Timestamp Rollback
             const Timestamp stableTimestamp = _wiredTigerKVEngine->getStableTimestamp();
             const Timestamp initialDataTimestamp = _wiredTigerKVEngine->getInitialDataTimestamp();
 
@@ -1959,6 +1960,8 @@ void WiredTigerKVEngine::setStableTimestamp(Timestamp stableTimestamp, bool forc
     }
 
     // Forward the oldest timestamp so that WiredTiger can clean up earlier timestamp data.
+    //MongoDB 在更新 stable timestamp 的同时，也会顺便去基于该时间戳去更新 oldest timestamp，所以，
+    // 在基于快照的实现机制下，oldest timestamp 和 stable timestamp 的语义也是一致的。
     setOldestTimestampFromStable();
 }
 
@@ -2210,6 +2213,7 @@ boost::optional<Timestamp> WiredTigerKVEngine::getLastStableRecoveryTimestamp() 
     return boost::none;
 }
 
+//参考https://mongoing.com/archives/77853
 StatusWith<Timestamp> WiredTigerKVEngine::getOplogNeededForRollback() const {
     // Get the current stable timestamp and use it throughout this function, ignoring updates from
     // another thread.

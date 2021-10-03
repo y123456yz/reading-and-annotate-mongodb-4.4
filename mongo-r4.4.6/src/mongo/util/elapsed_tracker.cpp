@@ -44,6 +44,16 @@ ElapsedTracker::ElapsedTracker(ClockSource* cs,
       _pings(0),
       _last(cs->now()) {}
 
+/*
+Server 层在一个 Query 正常执行的过程中（getNext()），会不断的调用 _yieldPolicy->shouldYieldOrInterrupt() 来判定
+//是否需要 yield，目前主要由如下两个因素共同决定是否 yield：
+
+1. internalQueryExecYieldIterations：shouldYieldOrInterrupt() 调用累积次数超过该配置值会主动 yield，默认为 128，
+   本质上反映的是从索引或者表上获取了多少条数据后主动 yield。yield 之后该累积次数清零。
+2. internalQueryExecYieldPeriodMS：从上次 yield 到现在的时间间隔超过该配置值，主动 yield，默认为 10ms，本质上反映
+    的是当前线程获取数据的行为持续了多久需要 yield。
+https://mongoing.com/archives/77853
+*/
 bool ElapsedTracker::intervalHasElapsed() {
     if (++_pings >= _hitsBetweenMarks) {
         _pings = 0;

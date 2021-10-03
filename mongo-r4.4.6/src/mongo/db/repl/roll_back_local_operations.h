@@ -53,7 +53,7 @@ extern FailPoint rollbackHangThenFailAfterWritingMinValid;
 
 // This is needed by rs_rollback and rollback_impl.
 extern FailPoint rollbackHangAfterTransitionToRollback;
-
+//roll backø…“‘≤Œøºhttps://mongoing.com/archives/77853
 class RollBackLocalOperations {
     RollBackLocalOperations(const RollBackLocalOperations&) = delete;
     RollBackLocalOperations& operator=(const RollBackLocalOperations&) = delete;

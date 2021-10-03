@@ -174,6 +174,7 @@ void BackgroundJob::jobBody() {
         delete this;
 }
 
+//例如startStorageControls会调用 
 void BackgroundJob::go() {
     stdx::unique_lock<Latch> l(_status->mutex);
     massert(17234,

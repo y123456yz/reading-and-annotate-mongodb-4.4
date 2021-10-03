@@ -427,6 +427,8 @@ public:
         _allowSpeculativeMajorityRead = allowSpeculativeMajorityRead;
     }
 
+    //目前在一些内部命令的场景下才会使用该机制，测试目的的话，可以在 find 命令中加一个特殊参数： 
+    // allowSpeculativeMajorityRead: true，强制开启 Speculative Read 的支持。
     bool allowSpeculativeMajorityRead() const {
         return _allowSpeculativeMajorityRead;
     }
@@ -589,6 +591,9 @@ private:
     bool _exhaust = false;
     bool _allowPartialResults = false;
     bool _readOnce = false;
+    //目前在一些内部命令的场景下才会使用该机制，测试目的的话，可以在 find 命令中加一个特殊参数： 
+    //  allowSpeculativeMajorityRead: true，强制开启 Speculative Read 的支持。
+    //  参考https://mongoing.com/archives/77853
     bool _allowSpeculativeMajorityRead = false;
 
     boost::optional<long long> _replicationTerm;

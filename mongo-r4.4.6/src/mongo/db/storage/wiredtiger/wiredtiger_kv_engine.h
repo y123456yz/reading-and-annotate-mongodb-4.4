@@ -462,7 +462,9 @@ private:
     Timestamp _recoveryTimestamp;
 
     // Tracks the stable and oldest timestamps we've set on the storage engine.
+    
     AtomicWord<std::uint64_t> _oldestTimestamp;
+    //²Î¿¼https://mongoing.com/archives/77853   Recover To Timestamp Rollback
     AtomicWord<std::uint64_t> _stableTimestamp;
 
     // Timestamp of data at startup. Used internally to advise checkpointing and recovery to a

@@ -696,6 +696,17 @@ private:
     // destroy.
     //
     // Any function of the state must be called while holding _mutex.
+    /*
+    重选举时的 Catchup Phase
+MongoDB 从 3.4 版本开始实现了上述机制（catchup phase），流程如下，
+
+候选节点在成功收到多数派节点的投票后，会通过心跳（replSetHeartBeat 命令）向其他节点广播自己当选的消息；
+其他节点的的 heartbeat response 中会包含自己最新的 applied opTime，当选节点会把其中最大的 opTIme 作为自己 catchup 的 targetOpTime；
+从 applied opTime 最大的节点或其下游节点同步数据，这个过程和正常的基于 oplog 的增量复制没有太大区别；
+如果在超时时间（由 settings.catchUpTimeoutMillis 决定，3.4 默认 60 秒）内追上了 targetOpTime，catchup 完成；
+如果超时，当选节点并不会 stepDown，而是继续作为新的 Primary 节点。
+参考https://mongoing.com/archives/77853
+     */
     class CatchupState {
     public:
         CatchupState(ReplicationCoordinatorImpl* repl) : _repl(repl) {}
@@ -1478,6 +1489,11 @@ private:
     // Waiters in this list are checked and notified on remote nodes' opTime updates and self's
     // lastDurable opTime updates. We do not check this list on self's lastApplied opTime updates to
     // avoid checking all waiters in the list on every write.
+    /*
+    引擎层事务提交后，相当于本地已经完成了本次写操作，对于 w:1 的 writeConcern，已经可以直接向客户端返回成功，
+    但是当 w > 1 时就需要等待足够多的 Secondary 节点也确认写操作执行成功，这个时候 MongoDB 会阻塞等待被唤醒，
+    被阻塞的用户线程会被加入到 _replicationWaiterList 中。
+    */
     WaiterList _replicationWaiterList;  // (M)
 
     // list of information about clients waiting for a particular lastApplied opTime.

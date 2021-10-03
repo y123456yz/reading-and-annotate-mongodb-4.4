@@ -278,6 +278,7 @@ bool WiredTigerRecoveryUnit::waitUntilDurable(OperationContext* opCtx) {
     return true;
 }
 
+//²Î¿¼https://mongoing.com/archives/77853   Recover To Timestamp Rollback
 bool WiredTigerRecoveryUnit::waitUntilUnjournaledWritesDurable(OperationContext* opCtx,
                                                                bool stableCheckpoint) {
     invariant(!_inUnitOfWork(), toString(_getState()));

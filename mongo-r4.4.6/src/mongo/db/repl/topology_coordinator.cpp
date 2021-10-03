@@ -1018,6 +1018,11 @@ HeartbeatResponseAction TopologyCoordinator::processHeartbeatResponse(
     return nextAction;
 }
 
+//用户线程等待的 lastOptime 是否小于等于 Secondary 汇报过来的时间戳 TS，如果是，表示有一个 Secondary 节点满足了
+//  本次 writeConcern 的要求。那么，TS 要使用 Secondary 汇报过来的那个时间戳呢？如果 writeConcern 中 j 参数指定
+//  的是 false，意味着本次写操作并不关注是否在 Disk 上持久化，那么 TS 使用 appliedOpTime， 否则使用 durableOpTime 。
+//  当有指定的 w 个节点（含 Primary 自身）汇报的 TS 大于等于 lastOptime，用户线程即可被唤醒，向客户端返回成功。
+//  参考https://mongoing.com/archives/77853
 bool TopologyCoordinator::haveNumNodesReachedOpTime(const OpTime& targetOpTime,
                                                     int numNodes,
                                                     bool durablyWritten) {
@@ -2701,6 +2706,21 @@ void TopologyCoordinator::_stepDownSelfAndReplaceWith(int newPrimary) {
     _setLeaderMode(LeaderMode::kNotLeader);
 }
 
+//副本集通过TopologyCoordinator::updateLastCommittedOpTimeAndWallTime推进majority commit point，从节点通过
+//  replSetHeartBeat节点保活(每个副本集节点都会每 2 秒向其他成员发送心跳),Secondary 节点会根据其中的 lastOpCommitted 
+//  直接推进自己的 mcp ,信息内容$replData: { term: 147, lastOpCommitted: { ts: Timestamp(1598455722, 1), t: 147 } 
+//  基于心跳机制的 mcp 推进方式，显然实时性是不够的，Primary 计算出新的 mcp 后，最多要等 2 秒,MongoDB 在 oplog 增量
+//  同步的过程中，upstream 同样会在向 downstream 返回的 oplog batch 中夹带 $replData 元信息，下游节点收到这个信息后
+//  同样会根据其中的 lastOpCommitted 直接推进自己的 mcp, Secondary 节点的 oplog fetcher 线程是持续不断的从上游拉取
+//  oplog，只要有新的写入，导致 Primary mcp 推进，那么下游就会立刻拉取新的 oplog，可以保证在 ms 级别同步推进自己的 mcp
+//  另外一点需要说明的是，心跳回复中实际上也包含了目标节点的 lastAppliedOpTime 和 lastDurableOpTime 信息，但是 Secondary
+//  节点并不会根据这些信息自行计算新的 mcp，而是总是等待 Primary 把 lastOpCommittedOpTime 传播过来，直接 set 自己的 mcp。
+//  参考https://mongoing.com/archives/77853
+
+
+//downstream 在 apply 完一批 oplog 之后会向 upstream 汇报自己的 apply 进度信息，upstream 同时也会向自己的 upstream 转
+// 发这个信息，基于这个机制，对 Primary 来说，显然最终它能不断的获取到整个副本集所有成员的 oplog apply 进度信息，进而
+// 推进自己的 majority commit point     https://mongoing.com/archives/77853
 bool TopologyCoordinator::updateLastCommittedOpTimeAndWallTime() {
     // If we're not primary or we're stepping down due to learning of a new term then we must not
     // advance the commit point.  If we are stepping down due to a user request, however, then it

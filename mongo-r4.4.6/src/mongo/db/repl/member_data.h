@@ -291,10 +291,17 @@ private:
     bool _lastUpdateStale = false;
 
     // Last known OpTime that the replica has applied and journaled to.
+    //通过给 upstream 发送 replSetUpdatePosition 命令来完成的，upstream 在收到该命令后，通过比较如果发现某
+    //个副本集成员汇报过来的时间戳信息比上次新，就会触发，唤醒等待 writeConcern 的用户线程的逻辑。
+    
+    //Secondary 上 Apply 完成并在 Disk 上持久化的 Oplog Entry 最新的时间戳， Oplog 也是作为 WiredTiger 
+    //引擎的一个 Table 来实现的，但 WT 引擎的 WAL sync 策略默认是 100ms 一次，所以这个时间戳通常滞后于appliedOpTime。
+    //参考https://mongoing.com/archives/77853
     OpTime _lastDurableOpTime;
     Date_t _lastDurableWallTime = Date_t();
 
     // Last known OpTime that the replica has applied, whether journaled or unjournaled.
+    //Secondary 上 Apply 完一批 Oplog 后，最新的 Oplog Entry 的时间戳。
     OpTime _lastAppliedOpTime;
     Date_t _lastAppliedWallTime = Date_t();
 

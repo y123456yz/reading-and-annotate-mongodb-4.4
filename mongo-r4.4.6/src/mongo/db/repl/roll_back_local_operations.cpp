@@ -161,6 +161,15 @@ StatusWith<RollBackLocalOperations::RollbackCommonPoint> RollBackLocalOperations
                   "Need to process additional remote operations.");
 }
 
+
+/*
+common point 的查找逻辑在 syncRollBackLocalOperations() 中实现，大致流程为，由新到老（反向）从同步源节点获取每条 oplog，然后
+和自己本地的 oplog 进行比对。本地 oplog 的扫描同样为反向，由于 oplog 的时间戳可以保证递增，扫描时可以通过保存中间位点的方式来
+减少重复扫描。如果最终在本地找到一条 oplog 的时间戳和 term 和同步源的完全一样，那么这条 oplog 即为 common point。由于在分布式
+环境下，不同节点的时钟不能做到完全实时同步，而 term 可以唯一标识一个主节点在任期间的修改（oplog）历史，所以需要把 oplog ts 和 
+term 结合起来进行 common point 的查找。
+https://mongoing.com/archives/77853
+*/
 StatusWith<RollBackLocalOperations::RollbackCommonPoint> syncRollBackLocalOperations(
     const OplogInterface& localOplog,
     const OplogInterface& remoteOplog,

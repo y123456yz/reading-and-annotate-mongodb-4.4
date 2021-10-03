@@ -1219,8 +1219,11 @@ void ReplicationCoordinatorImpl::setMyLastAppliedOpTimeAndWallTimeForward(
 
     stdx::unique_lock<Latch> lock(_mutex);
     auto myLastAppliedOpTime = _getMyLastAppliedOpTime_inlock();
+	//Secondary 在拉取到 Primary 上的这个写操作对应的 Oplog 并且 Apply 完成后，会更新自身的位点信息，
+	//并通知另外一个后台线程汇报自己的 appliedOpTime 和 durableOpTime 等信息给 upstream
     if (opTime > myLastAppliedOpTime) {
         _setMyLastAppliedOpTimeAndWallTime(lock, opTimeAndWallTime, false, consistency);
+		//// 这里是向 sync source 汇报自己的 oplog apply 进度信息
         _reportUpstream_inlock(std::move(lock));
     } else {
         if (opTime != myLastAppliedOpTime) {
@@ -1291,6 +1294,10 @@ void ReplicationCoordinatorImpl::_resetMyLastOpTimes(WithLock lk) {
     _stableOpTimeCandidates.clear();
 }
 
+//信息的汇报是通过给 upstream 发送 replSetUpdatePosition 命令来完成的，upstream 在收到该命令后，通过
+//比较如果发现某个副本集成员汇报过来的时间戳信息比上次新，就会触发，唤醒等待 writeConcern 的用户线程的逻辑。
+
+// 这里是向 sync source 汇报自己的 oplog apply 进度信息
 void ReplicationCoordinatorImpl::_reportUpstream_inlock(stdx::unique_lock<Latch> lock) {
     invariant(lock.owns_lock());
 
@@ -1953,6 +1960,11 @@ BSONObj ReplicationCoordinatorImpl::_getReplicationProgress(WithLock wl) const {
     return progress.obj();
 }
 
+/*
+引擎层事务提交后，相当于本地已经完成了本次写操作，对于 w:1 的 writeConcern，已经可以直接向客户端返回成功，
+但是当 w > 1 时就需要等待足够多的 Secondary 节点也确认写操作执行成功，这个时候 MongoDB 会阻塞等待被唤醒，
+被阻塞的用户线程会被加入到 _replicationWaiterList 中。
+*/
 SharedSemiFuture<void> ReplicationCoordinatorImpl::_startWaitingForReplication(
     WithLock wl, const OpTime& opTime, const WriteConcernOptions& writeConcern) {
 
@@ -4095,6 +4107,7 @@ void ReplicationCoordinatorImpl::CatchupState::abort_inlock(PrimaryCatchUpConclu
     _repl->_catchupState.reset();
 }
 
+//参考https://mongoing.com/archives/77853
 void ReplicationCoordinatorImpl::CatchupState::signalHeartbeatUpdate_inlock() {
     auto targetOpTime = _repl->_topCoord->latestKnownOpTimeSinceHeartbeatRestart();
     // Haven't collected all heartbeat responses.
@@ -4379,6 +4392,18 @@ void ReplicationCoordinatorImpl::_wakeReadyWaiters(WithLock lk, boost::optional<
         opTime);
 }
 
+/*
+MongoDB 是支持链式复制的，即， P->S1->S2 这种复制拓扑，如果在 P 上执行了写操作，且使用了 writeConcern w:3，即，
+要求得到三个节点的确认，而 S2 并不直接向 P 汇报自己的 Oplog Apply 信息，那这种场景下 writeConcern 要如何满足？
+
+MongoDB 采用了信息转发的方式来解决这个问题，当 S1 收到 S2 汇报过来的 replSetUpdatePosition 命令，进行处理
+  时（processReplSetUpdatePosition()），如果发现自己不是 Primary 角色，会立刻触发一个 forwardSlaveProgress 
+  任务，即，把自己的 Oplog Apply 信息，连同自己的 Secondary 汇报过来的，构造一个 replSetUpdatePosition 命令，
+  发往上游，从而保证，当任一个 Secondary 节点的 Oplog Apply 进度推进，Primary 都能够及时的收到消息，尽可能
+  降低 w>1 时，因 writeConcern 而带来的写操作延迟。
+
+参考https://mongoing.com/archives/77853
+*/
 Status ReplicationCoordinatorImpl::processReplSetUpdatePosition(const UpdatePositionArgs& updates,
                                                                 long long* configVersion) {
     stdx::unique_lock<Latch> lock(_mutex);
@@ -5188,6 +5213,12 @@ void ReplicationCoordinatorImpl::waitUntilSnapshotCommitted(OperationContext* op
     });
 }
 
+
+/*
+引擎层事务提交后，相当于本地已经完成了本次写操作，对于 w:1 的 writeConcern，已经可以直接向客户端返回成功，
+但是当 w > 1 时就需要等待足够多的 Secondary 节点也确认写操作执行成功，这个时候 MongoDB 会阻塞等待被唤醒，
+被阻塞的用户线程会被加入到 _replicationWaiterList 中。
+*/
 void ReplicationCoordinatorImpl::createWMajorityWriteAvailabilityDateWaiter(OpTime opTime) {
     stdx::lock_guard<Latch> lk(_mutex);
 
