@@ -48,6 +48,7 @@ namespace repl {
 const OperationContext::Decoration<ReadConcernArgs> handle =
     OperationContext::declareDecoration<ReadConcernArgs>();
 
+//通过repl::ReadConcernArgs::get(opCtx);获取本请求对应的ReadConcernArgs信息 
 ReadConcernArgs& ReadConcernArgs::get(OperationContext* opCtx) {
     return handle(opCtx);
 }
@@ -305,6 +306,7 @@ void ReadConcernArgs::appendInfo(BSONObjBuilder* builder) const {
     rcBuilder.done();
 }
 
+//收到客户端请求后，在ReadConcernArgs::parse中调用
 boost::optional<ReadConcernLevel> readConcernLevels::fromString(StringData levelString) {
     if (levelString == readConcernLevels::kLocalName) {
         return ReadConcernLevel::kLocalReadConcern;

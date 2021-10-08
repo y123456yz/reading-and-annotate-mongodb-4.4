@@ -202,6 +202,8 @@ public:
     ConnectionId getConnectionId() const {
         return _connectionId;
     }
+
+    //说明是客户端链接
     bool isFromUserConnection() const {
         return _connectionId > 0;
     }
@@ -290,6 +292,7 @@ private:
     const std::string _desc;
 
     // > 0 for things "conn", 0 otherwise
+    //说明是客户端链接
     const ConnectionId _connectionId;
 
     // Protects the contents of the Client (such as changing the OperationContext, etc)

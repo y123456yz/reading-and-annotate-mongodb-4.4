@@ -220,6 +220,7 @@ std::set<ShardId> validateParticipants(OperationContext* opCtx,
     return participantsSet;
 }
 
+//参考https://www.sohu.com/a/322862902_120172409 Mongo4.2分布式事务实现Overview 
 class CoordinateCommitTransactionCmd : public TypedCommand<CoordinateCommitTransactionCmd> {
 public:
     using Request = CoordinateCommitTransaction;

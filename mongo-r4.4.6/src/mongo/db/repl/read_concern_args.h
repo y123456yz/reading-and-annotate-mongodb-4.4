@@ -46,15 +46,24 @@ class BSONObj;
 class OperationContext;
 
 namespace repl {
-
+//通过repl::ReadConcernArgs::get(opCtx);获取本请求对应的ReadConcernArgs信息 
 class ReadConcernArgs {
 public:
+    //参数解析参考ReadConcernArgs::parse
+    
+
+    //对应取值见readConcernLevels::fromString
     static constexpr StringData kReadConcernFieldName = "readConcern"_sd;
     static constexpr StringData kAfterOpTimeFieldName = "afterOpTime"_sd;
     static constexpr StringData kAfterClusterTimeFieldName = "afterClusterTime"_sd;
     static constexpr StringData kAtClusterTimeFieldName = "atClusterTime"_sd;
     static constexpr StringData kLevelFieldName = "level"_sd;
 
+
+    // The "kImplicitDefault" read concern, used by internal operations, is deliberately empty (no
+    // 'level' specified). This allows internal operations to specify a read concern, while still
+    // allowing it to be either local or available on sharded secondaries.
+    //如果没有指定readConcern参数信息，则默认为ReadConcernArgs::kImplicitDefault 
     static const BSONObj kImplicitDefault;
 
     /**
@@ -192,11 +201,13 @@ private:
     /**
      *  Read data after cluster-wide cluster time.
      */
+    //afterClusterTime参考: https://mongoing.com/archives/77853  https://mongoing.com/archives/25302
     boost::optional<LogicalTime> _afterClusterTime;
     /**
      * Read data at a particular cluster time.
      */
-    boost::optional<LogicalTime> _atClusterTime;
+    boost::optional<LogicalTime> _atClusterTime; 
+    //ReadConcernArgs::parse中解析，ReadConcernArgs::getLevel()中获取该level值
     boost::optional<ReadConcernLevel> _level;
 
     /**

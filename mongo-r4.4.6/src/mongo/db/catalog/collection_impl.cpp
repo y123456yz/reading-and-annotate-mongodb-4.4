@@ -364,6 +364,7 @@ bool CollectionImpl::findDoc(OperationContext* opCtx,
     dassert(opCtx->lockState()->isCollectionLockedForMode(ns(), MODE_IS));
 
     RecordData rd;
+	//WiredTigerRecordStore::findRecord
     if (!_recordStore->findRecord(opCtx, loc, &rd))
         return false;
     *out = Snapshotted<BSONObj>(opCtx->recoveryUnit()->getSnapshotId(), rd.releaseToBson());

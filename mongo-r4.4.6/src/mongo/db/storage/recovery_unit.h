@@ -424,9 +424,11 @@ public:
     /**
      * The ReadSource indicates which external or provided timestamp to read from for future
      * transactions.
-     */
+     */ 
+    //可以参考https://zhuanlan.zhihu.com/p/61298232
+    //注意ReadConcernLevel和ReadSource中的RecoveryUnit::kMajorityCommitted等关联，转换参考getNewReadSource
     //setTimestampReadSource中赋值
-    enum ReadSource {
+    enum ReadSource {//ReadSource::kMajorityCommitted
         /**
          * Read without a timestamp. This is the default.
          */
@@ -434,14 +436,20 @@ public:
         /**
          * Read from the majority all-commmitted timestamp.
          */
-        kMajorityCommitted,
+        //本地维护的被raft提交后的时间戳，readConcern=Majority会读这个时间戳。
+        //生效见waitForReadConcernImpl
+        kMajorityCommitted, 
         /**
          * Read from the latest timestamp where no future transactions will commit at or before.
          */
+        
         kNoOverlap,
         /**
          * Read from the lastApplied timestamp.
          */
+         //ApplyBatchFinalizer::_recordApplied 
+        //读主/从的默认readConcern=local的实现方式。 赋值见getNewReadSource
+        //生效使用见AutoGetCollectionForRead::AutoGetCollectionForRead
         kLastApplied,
         /**
          * Read from the all_durable timestamp. New transactions will always read from the same
@@ -450,7 +458,8 @@ public:
         kAllDurableSnapshot,
         /**
          * Read from the timestamp provided to setTimestampReadSource.
-         */
+         */ 
+        //指定时间戳读，生效见waitForReadConcernImpl  FindCmd::run getOldestActiveTimestamp
         kProvided
     };
 

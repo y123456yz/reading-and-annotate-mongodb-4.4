@@ -268,6 +268,11 @@ void setPrepareConflictBehaviorForReadConcernImpl(OperationContext* opCtx,
     opCtx->recoveryUnit()->setPrepareConflictBehavior(prepareConflictBehavior);
 }
 
+//afterClusterTime参考: https://mongoing.com/archives/77853  https://mongoing.com/archives/25302
+//mongo的每次操作，都会带上clusterTime返回，而开启了因果一致性session功能的driver在每次请求服务端时，会带上afterClusterTime
+// 参数，该参数就是服务端上一次操作返回的clusterTime。这种情况下，读操作的readConcern，既包含majority，又包含afterClusterTime。
+// 服务端需要等到oplog向前推进到同时满足这两个条件后，才会给客户端返回值。   https://mongoing.com/archives/25302
+
 Status waitForReadConcernImpl(OperationContext* opCtx,
                               const repl::ReadConcernArgs& readConcernArgs,
                               bool allowAfterClusterTime) {
@@ -300,6 +305,7 @@ Status waitForReadConcernImpl(OperationContext* opCtx,
         }
     }
 
+	////afterClusterTime参考: https://mongoing.com/archives/77853  https://mongoing.com/archives/25302
     auto afterClusterTime = readConcernArgs.getArgsAfterClusterTime();
     auto atClusterTime = readConcernArgs.getArgsAtClusterTime();
 
@@ -550,6 +556,9 @@ Status waitForSpeculativeMajorityReadConcernImpl(
 
 auto setPrepareConflictBehaviorForReadConcernRegistration = MONGO_WEAK_FUNCTION_REGISTRATION(
     setPrepareConflictBehaviorForReadConcern, setPrepareConflictBehaviorForReadConcernImpl);
+
+//ServiceEntryPointMongod::Hooks中的waitForReadConcern调用
+////execCommandDatabase->behaviors.waitForReadConcern调用
 auto waitForReadConcernRegistration =
     MONGO_WEAK_FUNCTION_REGISTRATION(waitForReadConcern, waitForReadConcernImpl);
 
@@ -566,6 +575,7 @@ MongoDB 采用同一个手段解决了上述两个问题，当客户端采用 “linearizable” readConc
 noop 之前写入的数据也已经复制到多数派节点，确保了读到的数据不会被回滚。
 参考https://mongoing.com/archives/77853
 */
+////ServiceEntryPointMongod::Hooks中的waitForReadConcern调用
 auto waitForLinearizableReadConcernRegistration = MONGO_WEAK_FUNCTION_REGISTRATION(
     waitForLinearizableReadConcern, waitForLinearizableReadConcernImpl);
 auto waitForSpeculativeMajorityReadConcernRegistration = MONGO_WEAK_FUNCTION_REGISTRATION(

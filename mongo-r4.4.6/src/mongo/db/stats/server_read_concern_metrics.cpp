@@ -50,6 +50,7 @@ ServerReadConcernMetrics* ServerReadConcernMetrics::get(OperationContext* opCtx)
     return get(opCtx->getServiceContext());
 }
 
+//FindCmd::run中调用  readConcern相关统计  db.serverStatus().opReadConcernCounters
 void ServerReadConcernMetrics::recordReadConcern(const repl::ReadConcernArgs& readConcernArgs) {
     if (!readConcernArgs.hasLevel()) {
         _noLevelCount.fetchAndAdd(1);

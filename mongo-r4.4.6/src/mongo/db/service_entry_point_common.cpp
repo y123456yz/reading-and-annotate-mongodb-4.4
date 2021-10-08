@@ -1218,6 +1218,7 @@ void execCommandDatabase(OperationContext* opCtx,
             rpc::TrackingMetadata::get(opCtx).setIsLogged(true);
         }
 
+		
         behaviors.waitForReadConcern(opCtx, invocation.get(), request);
         behaviors.setPrepareConflictBehaviorForReadConcern(opCtx, invocation.get());
 

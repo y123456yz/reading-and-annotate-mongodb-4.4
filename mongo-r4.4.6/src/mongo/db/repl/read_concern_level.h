@@ -34,10 +34,24 @@
 namespace mongo {
 namespace repl {
 
+
+//官网 https://docs.mongodb.com/v4.4/reference/read-concern/
+//参考 https://mongoing.com/archives/77853
+
+//注意ReadConcernLevel和ReadSource中的RecoveryUnit::kMajorityCommitted等关联，转换参考getNewReadSource
+
+//最终存储在ReadConcernArgs._level中
 enum class ReadConcernLevel {
+    //local/available：local 和 available 的语义基本一致，都是读操作直接读取本地最新的数据。但是，available 使用
+    // MongoDB 分片集群场景下，含特殊语义（为了保证性能，可以返回孤儿文档），
+    //生效见canReadAtLastApplied
     kLocalReadConcern,
+    //生效见waitForReadConcernImpl  ReplicationCoordinatorImpl::_waitUntilClusterTimeForRead  computeOperationTime
     kMajorityReadConcern,
+    //生效参考service_entry_point_mongod.cpp中的waitForLinearizableReadConcern中调用
+    //直接读主节点
     kLinearizableReadConcern,
+    //available 使用在分片集群场景下，和kLocalReadConcern功能类似，生效见canReadAtLastApplied
     kAvailableReadConcern,
     kSnapshotReadConcern
 };

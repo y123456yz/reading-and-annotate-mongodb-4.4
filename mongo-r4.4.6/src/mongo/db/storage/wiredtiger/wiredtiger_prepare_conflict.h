@@ -62,6 +62,7 @@ void wiredTigerPrepareConflictFailPointLog();
  * re-try f, so any required timeout behavior must be enforced within f.
  * The function f must return a WiredTiger error code.
  */
+//mongo将所有对wiredTiger的读操作通过wiredTigerPrepareCon?ictRetry封装起来。  可以参考下https://mongoing.com/archives/26731
 template <typename F>
 int wiredTigerPrepareConflictRetry(OperationContext* opCtx, F&& f) {
     invariant(opCtx);

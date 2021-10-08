@@ -1035,6 +1035,7 @@ RecordData WiredTigerRecordStore::_getData(const WiredTigerCursor& cursor) const
     return RecordData(static_cast<const char*>(value.data), value.size).getOwned();
 }
 
+//CollectionImpl::findDoc
 bool WiredTigerRecordStore::findRecord(OperationContext* opCtx,
                                        const RecordId& id,
                                        RecordData* out) const {
@@ -1044,6 +1045,7 @@ bool WiredTigerRecordStore::findRecord(OperationContext* opCtx,
     WT_CURSOR* c = curwrap.get();
     invariant(c);
     setKey(c, id);
+	//mongo将所有对wiredTiger的读操作通过wiredTigerPrepareConflictRetry封装起来。
     int ret = wiredTigerPrepareConflictRetry(opCtx, [&] { return c->search(c); });
     if (ret == WT_NOTFOUND) {
         return false;

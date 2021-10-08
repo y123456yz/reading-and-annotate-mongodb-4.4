@@ -306,11 +306,12 @@ public:
          *   --Generate the first batch.
          *   --Save state for getMore, transferring ownership of the executor to a ClientCursor.
          *   --Generate response to send to the client.
-         */
+         */ //FindCmd::run 
         void run(OperationContext* opCtx, rpc::ReplyBuilderInterface* result) {
             CommandHelpers::handleMarkKillOnClientDisconnect(opCtx);
             // Although it is a command, a find command gets counted as a query.
             globalOpCounters.gotQuery();
+			//readConcern相关统计  db.serverStatus().opReadConcernCounters
             ServerReadConcernMetrics::get(opCtx)->recordReadConcern(
                 repl::ReadConcernArgs::get(opCtx));
 

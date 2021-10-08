@@ -73,6 +73,7 @@ public:
             opCtx, repl::ReadConcernArgs::get(opCtx), prepareConflictBehavior);
     }
 
+	 
     void waitForReadConcern(OperationContext* opCtx,
                             const CommandInvocation* invocation,
                             const OpMsgRequest& request) const override {
@@ -165,6 +166,7 @@ public:
         // operation then we skip waiting for writeConcern.
     }
 
+	
     void waitForLinearizableReadConcern(OperationContext* opCtx) const override {
         // When a linearizable read command is passed in, check to make sure we're reading
         // from the primary.

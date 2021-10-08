@@ -39,6 +39,7 @@
 
 namespace mongo {
 namespace {
+//getNewReadSource中调用
 bool canReadAtLastApplied(OperationContext* opCtx) {
     // Local and available are the only ReadConcern levels that allow their ReadSource to be
     // overridden to read at lastApplied. They read without a timestamp by default, but this check
@@ -50,7 +51,7 @@ bool canReadAtLastApplied(OperationContext* opCtx) {
     // consistent data.
     const auto readConcernLevel = repl::ReadConcernArgs::get(opCtx).getLevel();
     if ((opCtx->getClient()->isFromUserConnection() || opCtx->getClient()->isInDirectClient()) &&
-        (readConcernLevel == repl::ReadConcernLevel::kLocalReadConcern ||
+        (readConcernLevel == repl::ReadConcernLevel::kLocalReadConcern || 
          readConcernLevel == repl::ReadConcernLevel::kAvailableReadConcern)) {
         return true;
     }
@@ -123,12 +124,18 @@ bool shouldReadAtLastApplied(OperationContext* opCtx,
 
     return true;
 }
+
+//PlanYieldPolicy::_yieldAllLocks   AutoGetCollectionForRead::AutoGetCollectionForRead中调用
 boost::optional<RecoveryUnit::ReadSource> getNewReadSource(OperationContext* opCtx,
                                                            const NamespaceString& nss) {
     if (!canReadAtLastApplied(opCtx)) {
+		//kLocalReadConcern和kAvailableReadConcern走这里
         return boost::none;
     }
 
+	//kLocalReadConcern和kAvailableReadConcern以外的ReadSource走下面的逻辑
+
+	
     const auto existing = opCtx->recoveryUnit()->getTimestampReadSource();
     std::string reason;
 	//读从节点的时候释放可以读最近一批回放的数据，从而可以跳过PBWM lock全局锁

@@ -33,28 +33,39 @@
 
 namespace mongo {
 
+//注册见setPrepareConflictBehaviorForReadConcernRegistration
 void setPrepareConflictBehaviorForReadConcern(OperationContext* opCtx,
                                               const repl::ReadConcernArgs& readConcernArgs,
                                               PrepareConflictBehavior prepareConflictBehavior) {
     static auto w = MONGO_WEAK_FUNCTION_DEFINITION(setPrepareConflictBehaviorForReadConcern);
+	//对应setPrepareConflictBehaviorForReadConcernImpl
     return w(opCtx, readConcernArgs, prepareConflictBehavior);
 }
 
+//ServiceEntryPointMongod::Hooks中的waitForReadConcern调用
+////execCommandDatabase->behaviors.waitForReadConcern调用
+
+//注册见waitForReadConcernRegistration
 Status waitForReadConcern(OperationContext* opCtx,
                           const repl::ReadConcernArgs& readConcernArgs,
                           bool allowAfterClusterTime) {
     static auto w = MONGO_WEAK_FUNCTION_DEFINITION(waitForReadConcern);
+	//对应waitForReadConcernImpl
     return w(opCtx, readConcernArgs, allowAfterClusterTime);
 }
 
+////service_entry_point_mongod.cpp中的ForLinearizableReadConcern中调用
 Status waitForLinearizableReadConcern(OperationContext* opCtx, int readConcernTimeout) {
     static auto w = MONGO_WEAK_FUNCTION_DEFINITION(waitForLinearizableReadConcern);
+	//对应waitForLinearizableReadConcernImpl
     return w(opCtx, readConcernTimeout);
 }
 
+//waitForSpeculativeMajorityReadConcernRegistration中注册
 Status waitForSpeculativeMajorityReadConcern(
     OperationContext* opCtx, repl::SpeculativeMajorityReadInfo speculativeReadInfo) {
     static auto w = MONGO_WEAK_FUNCTION_DEFINITION(waitForSpeculativeMajorityReadConcern);
+	//对应waitForSpeculativeMajorityReadConcernImpl
     return w(opCtx, speculativeReadInfo);
 }
 

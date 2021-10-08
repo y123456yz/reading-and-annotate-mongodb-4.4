@@ -2059,6 +2059,7 @@ Timestamp WiredTigerKVEngine::getInitialDataTimestamp() {
     return Timestamp(_initialDataTimestamp.load());
 }
 
+//²Î¿¼https://mongoing.com/archives/77853
 bool WiredTigerKVEngine::supportsRecoverToStableTimestamp() const {
     if (!_keepDataHistory) {
         return false;

@@ -47,6 +47,9 @@ namespace mongo {
 /**
  * Keeps track of the transaction state. A session is in use when it is being used by a request.
  */
+//在Mongos侧，每个OperationCtx会有一个TransactionRouter，记录事务上下文。
+//TransactionRouter::get(opCtx)
+
 class TransactionRouter {
     struct PrivateState;
     struct ObservableState;
