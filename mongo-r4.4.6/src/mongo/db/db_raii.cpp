@@ -174,13 +174,13 @@ AutoGetCollectionForRead::AutoGetCollectionForRead(OperationContext* opCtx,
 		//一般正常情况下，都是从这里直接返回，表示获取锁信息成功
         if (!SnapshotHelper::collectionChangesConflictWithRead(minSnapshot, readTimestamp)) {
 			LOGV2_DEBUG(122418,
-		        3,
+		        5,
 		        "yang test .......AutoGetCollectionForRead::AutoGetCollectionForRead no conflict");
             return;
         }
 
 		LOGV2_DEBUG(122418,
-	        3,
+	        5,
 	        "yang test .......AutoGetCollectionForRead::AutoGetCollectionForRead  conflict ");
 
         // If we are reading at a provided timestamp earlier than the latest catalog changes,

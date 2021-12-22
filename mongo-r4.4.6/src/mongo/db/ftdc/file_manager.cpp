@@ -301,6 +301,7 @@ FTDCFileManager::recoverInterimFile() {
     return docs;
 }
 
+//ÎÄ¼þÇÐ¸î FTDCFileManager::writeSampleAndRotateIfNeeded
 Status FTDCFileManager::rotate(Client* client) {
     auto s = _writer.close();
     if (!s.isOK()) {

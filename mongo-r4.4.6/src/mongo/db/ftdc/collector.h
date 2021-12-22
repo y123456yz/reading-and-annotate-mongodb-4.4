@@ -48,6 +48,8 @@ class OperationContext;
  *
  * Provides an interface to collect BSONObjs from system providers
  */
+//FTDCSimpleInternalCommandCollector  FreeMonCollectorInterface  ConnPoolStatsCollector
+//FTDCServerStatusCommandCollector  FTDCSimpleInternalCommandCollector Ftdc_system_stats SystemMetricsCollector
 class FTDCCollectorInterface {
     FTDCCollectorInterface(const FTDCCollectorInterface&) = delete;
     FTDCCollectorInterface& operator=(const FTDCCollectorInterface&) = delete;
@@ -79,6 +81,7 @@ protected:
  *
  * Not Thread-Safe. Locking is owner's responsibility.
  */
+//FTDCController._periodicCollectors
 class FTDCCollectorCollection {
     FTDCCollectorCollection(const FTDCCollectorCollection&) = delete;
     FTDCCollectorCollection& operator=(const FTDCCollectorCollection&) = delete;
@@ -112,6 +115,9 @@ public:
 
 private:
     // collection of collectors
+    
+    //FTDCSimpleInternalCommandCollector  FreeMonCollectorInterface  ConnPoolStatsCollector
+    //FTDCServerStatusCommandCollector  FTDCSimpleInternalCommandCollector Ftdc_system_stats SystemMetricsCollector
     std::vector<std::unique_ptr<FTDCCollectorInterface>> _collectors;
 };
 

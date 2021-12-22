@@ -242,7 +242,7 @@ bool WiredTigerSessionCache::isShuttingDown() {
 
 
 // Flushes the journal log to disk. Checkpoints all data if journaling is disabled.
-//WiredTigerRecoveryUnit::waitUntilDurable调用，持久化处理
+//WiredTigerRecoveryUnit::waitUntilDurable  WiredTigerRecoveryUnit::waitUntilUnjournaledWritesDurable  调用，持久化处理
 void WiredTigerSessionCache::waitUntilDurable(OperationContext* opCtx,
                                               Fsync syncType,
                                               UseJournalListener useListener) {

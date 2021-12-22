@@ -1528,7 +1528,7 @@ Status WiredTigerRecordStore::_insertRecords(OperationContext* opCtx,
         setKey(c, record.id);
         WiredTigerItem value(record.data.data(), record.data.size());
 		LOGV2_DEBUG(122416,
-            3,
+            5,
             "yang test .......WiredTigerRecordStore::_insertRecords ",
 			" _uri:"_attr = _uri,                
 			" key:"_attr = record.id,

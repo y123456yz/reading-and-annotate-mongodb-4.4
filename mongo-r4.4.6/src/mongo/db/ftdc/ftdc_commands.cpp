@@ -46,6 +46,7 @@ namespace {
  *
  * Document will be empty if FTDC has never run.
  */
+// db.runCommand({getDiagnosticData:1})
 class GetDiagnosticDataCommand final : public BasicCommand {
 public:
     GetDiagnosticDataCommand() : BasicCommand("getDiagnosticData") {}

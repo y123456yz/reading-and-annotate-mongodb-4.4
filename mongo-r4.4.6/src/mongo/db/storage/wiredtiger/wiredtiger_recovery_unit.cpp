@@ -275,6 +275,10 @@ bool WiredTigerRecoveryUnit::waitUntilDurable(OperationContext* opCtx) {
                                     WiredTigerSessionCache::Fsync::kJournal,
                                     WiredTigerSessionCache::UseJournalListener::kUpdate);
 
+	LOGV2_DEBUG(122418,
+        5,
+        "yang test .......WiredTigerRecoveryUnit::waitUntilDurable");
+
     return true;
 }
 
@@ -293,8 +297,14 @@ bool WiredTigerRecoveryUnit::waitUntilUnjournaledWritesDurable(OperationContext*
     WiredTigerSessionCache::Fsync fsyncType = stableCheckpoint
         ? WiredTigerSessionCache::Fsync::kCheckpointStableTimestamp
         : WiredTigerSessionCache::Fsync::kCheckpointAll;
+	//WiredTigerSessionCache::waitUntilDurable  
     _sessionCache->waitUntilDurable(
         opCtx, fsyncType, WiredTigerSessionCache::UseJournalListener::kUpdate);
+
+
+	LOGV2_DEBUG(122418,
+        5,
+        "yang test .......WiredTigerRecoveryUnit::waitUntilUnjournaledWritesDurable");
 
     return true;
 }
@@ -499,6 +509,7 @@ void WiredTigerRecoveryUnit::_txnClose(bool commit) {//ÊÂÎñÌá½»»òÕßÊÂÎñ»Ø¹öÔÚÕâÀ
     _mustBeTimestamped = false;
 }
 
+//waitForReadConcernImpl    getMore    applyCursorReadConcern
 Status WiredTigerRecoveryUnit::obtainMajorityCommittedSnapshot() {
     invariant(_timestampReadSource == ReadSource::kMajorityCommitted);
     auto snapshotName = _sessionCache->snapshotManager().getMinSnapshotForNextCommittedRead();
@@ -512,6 +523,10 @@ Status WiredTigerRecoveryUnit::obtainMajorityCommittedSnapshot() {
 
 //×¢ÒâÕâÀïÃæ»áÆôÓÃÊÂÎñWT begin_transaction
 boost::optional<Timestamp> WiredTigerRecoveryUnit::getPointInTimeReadTimestamp() {
+	LOGV2_DEBUG(122418,
+        5,
+        "yang test .......WiredTigerRecoveryUnit::getPointInTimeReadTimestamp");
+
     // After a ReadSource has been set on this RecoveryUnit, callers expect that this method returns
     // the read timestamp that will be used for current or future transactions. Because callers use
     // this timestamp to inform visiblity of operations, it is therefore necessary to open a
@@ -654,6 +669,10 @@ Timestamp WiredTigerRecoveryUnit::_beginTransactionAtAllDurableTimestamp(WT_SESS
     // used.
     auto readTimestamp = _getTransactionReadTimestamp(session);
     txnOpen.done();
+
+	LOGV2_DEBUG(122418,
+        5,
+        "yang test .......WiredTigerRecoveryUnit::_beginTransactionAtAllDurableTimestamp");
     return readTimestamp;
 }
 
@@ -698,6 +717,9 @@ Timestamp WiredTigerRecoveryUnit::_beginTransactionAtLastAppliedTimestamp(WT_SES
         txnOpen.done();
     }
 
+	LOGV2_DEBUG(122418,
+        5,
+        "yang test .......WiredTigerRecoveryUnit::_beginTransactionAtLastAppliedTimestamp");
     // We might have rounded to oldest between calling getLastApplied and setReadSnapshot. We
     // need to get the actual read timestamp we used.
     return _getTransactionReadTimestamp(session);
@@ -762,10 +784,18 @@ Timestamp WiredTigerRecoveryUnit::_beginTransactionAtNoOverlapTimestamp(WT_SESSI
     // We might have rounded to oldest between calling getAllDurable and setReadSnapshot. We
     // need to get the actual read timestamp we used.
     readTimestamp = _getTransactionReadTimestamp(session);
+	LOGV2_DEBUG(122418,
+        5,
+        "yang test .......WiredTigerRecoveryUnit::_beginTransactionAtNoOverlapTimestamp");
+
     return readTimestamp;
 }
 
 Timestamp WiredTigerRecoveryUnit::_getTransactionReadTimestamp(WT_SESSION* session) {
+	LOGV2_DEBUG(122418,
+        5,
+        "yang test .......WiredTigerRecoveryUnit::_getTransactionReadTimestamp");
+
     char buf[(2 * 8 /*bytes in hex*/) + 1 /*nul terminator*/];
     auto wtstatus = session->query_timestamp(session, buf, "get=read");
     invariantWTOK(wtstatus);
@@ -957,6 +987,11 @@ std::shared_ptr<StorageStats> WiredTigerRecoveryUnit::getOperationStatistics() c
 
     if (!_session)
         return statsPtr;
+
+	LOGV2_DEBUG(122418,
+        5,
+        "yang test .......WiredTigerRecoveryUnit::getOperationStatistics");
+
 
     WT_SESSION* s = _session->getSession();
     invariant(s);

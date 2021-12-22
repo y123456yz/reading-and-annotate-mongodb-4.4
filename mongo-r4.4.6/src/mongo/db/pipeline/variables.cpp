@@ -225,6 +225,7 @@ Variables::Id VariablesParseState::defineVariable(StringData name) {
             Variables::kBuiltinVarNameToId.find(name) == Variables::kBuiltinVarNameToId.end());
 
     Variables::Id id = _idGenerator->generateId();
+	
     invariant(id > _lastSeen);
 
     _variables[name] = _lastSeen = id;

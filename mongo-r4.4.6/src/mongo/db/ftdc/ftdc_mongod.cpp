@@ -42,6 +42,7 @@
 namespace mongo {
 
 namespace {
+//mongod主从过程startFTDC
 void registerMongoDCollectors(FTDCController* controller) {
     // These metrics are only collected if replication is enabled
     if (repl::ReplicationCoordinator::get(getGlobalServiceContext())->getReplicationMode() !=

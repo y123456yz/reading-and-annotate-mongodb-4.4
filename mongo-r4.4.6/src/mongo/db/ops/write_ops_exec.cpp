@@ -322,13 +322,13 @@ void insertDocuments(OperationContext* opCtx,
     // Intentionally not using writeConflictRetry. That is handled by the caller so it can react to
     // oversized batches.
     LOGV2_DEBUG(122416,
-            3,
+            5,
             "yang test .......insertDocuments begin 1");
 	//实际上在insertDocuments->CollectionImpl::insertDocuments->OpObserverImpl::onInserts中会嵌套再次使用WriteUnitOfWork wuow(opCtx);
     WriteUnitOfWork wuow(opCtx);
 
     LOGV2_DEBUG(122416,
-            3,
+            5,
             "yang test .......insertDocuments begin 2");
 
 
@@ -370,7 +370,7 @@ void insertDocuments(OperationContext* opCtx,
             return !collElem || collection->ns().ns() == collElem.str();
         });
 	LOGV2_DEBUG(1224116,
-			3,
+			5,
 			"yang test .......insertDocuments begin 3");
 
     uassertStatusOK(
@@ -378,13 +378,13 @@ void insertDocuments(OperationContext* opCtx,
         collection->insertDocuments(opCtx, begin, end, &CurOp::get(opCtx)->debug(), fromMigrate));
 
     LOGV2_DEBUG(122417,
-            3,
+            5,
             "yang test .......insertDocuments end 1");
 	//WriteUnitOfWork::commit
     wuow.commit(); 
 	
     LOGV2_DEBUG(122416,
-            3,
+            5,
             "yang test .......insertDocuments begin 2");
 }
 

@@ -42,12 +42,13 @@
 #include "mongo/util/time_support.h"
 
 namespace mongo {
-
+//FTDCController::addPeriodicCollector
 void FTDCCollectorCollection::add(std::unique_ptr<FTDCCollectorInterface> collector) {
     // TODO: ensure the collectors all have unique names.
     _collectors.emplace_back(std::move(collector));
 }
 
+//FTDCController::doLoop()
 std::tuple<BSONObj, Date_t> FTDCCollectorCollection::collect(Client* client) {
     // If there are no collectors, just return an empty BSONObj so that that are caller knows we did
     // not collect anything
@@ -89,6 +90,10 @@ std::tuple<BSONObj, Date_t> FTDCCollectorCollection::collect(Client* client) {
 
         subObjBuilder.appendDate(kFTDCCollectStartField, now);
 
+		//FTDCSimpleInternalCommandCollector  FreeMonCollectorInterface  ConnPoolStatsCollector
+    	//FTDCServerStatusCommandCollector  FTDCSimpleInternalCommandCollector Ftdc_system_stats SystemMetricsCollector
+   
+		//FTDCCollectorCollection::collect
         collector->collect(opCtx.get(), subObjBuilder);
 
         end = client->getServiceContext()->getPreciseClockSource()->now();

@@ -487,7 +487,7 @@ Status CollectionImpl::insertDocuments(OperationContext* opCtx,
     }
 
 	LOGV2_DEBUG(122418,
-        3,
+        5,
         "yang test .......CollectionImpl::insertDocuments begin x");
 
     // Should really be done in the collection object at creation and updated on index create.
@@ -514,9 +514,8 @@ Status CollectionImpl::insertDocuments(OperationContext* opCtx,
 	*/
 
 	
-
 	LOGV2_DEBUG(122418,
-        3,
+        5,
         "yang test .......CollectionImpl::insertDocuments begin xx");
     const SnapshotId sid = opCtx->recoveryUnit()->getSnapshotId();
 
@@ -528,7 +527,7 @@ Status CollectionImpl::insertDocuments(OperationContext* opCtx,
     invariant(sid == opCtx->recoveryUnit()->getSnapshotId());
 	
 	LOGV2_DEBUG(122419,
-        3,
+        5,
         "yang test .......CollectionImpl::insertDocuments begin 2");
 
 	//OpObserverImpl::onInserts   oplog–¥»Îoplog.rs±Ì÷–
@@ -565,7 +564,7 @@ Status CollectionImpl::insertDocuments(OperationContext* opCtx,
         });
 		
 	LOGV2_DEBUG(122428,
-        3,
+        5,
         "yang test .......CollectionImpl::insertDocuments end");
     return Status::OK();
 }

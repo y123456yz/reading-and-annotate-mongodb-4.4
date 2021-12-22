@@ -149,6 +149,7 @@ Status FTDCFileWriter::writeMetadata(const BSONObj& metadata, Date_t date) {
     return writeArchiveFileBuffer({wrapped.objdata(), static_cast<size_t>(wrapped.objsize())});
 }
 
+//writeSampleAndRotateIfNeeded
 Status FTDCFileWriter::writeSample(const BSONObj& sample, Date_t date) {
     auto ret = _compressor.addSample(sample, date);
 

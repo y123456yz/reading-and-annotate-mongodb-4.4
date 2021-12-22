@@ -48,6 +48,128 @@
 #include "mongo/util/time_support.h"
 
 namespace mongo {
+/*
+# Copyright (C) 2018-present MongoDB, Inc.
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the Server Side Public License, version 1,
+# as published by MongoDB, Inc.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# Server Side Public License for more details.
+#
+# You should have received a copy of the Server Side Public License
+# along with this program. If not, see
+# <http://www.mongodb.com/licensing/server-side-public-license>.
+#
+# As a special exception, the copyright holders give permission to link the
+# code of portions of this program with the OpenSSL library under certain
+# conditions as described in each individual source file and distribute
+# linked combinations including the program with the OpenSSL library. You
+# must comply with the Server Side Public License in all respects for
+# all of the code used other than as permitted herein. If you modify file(s)
+# with this exception, you may extend this exception to your version of the
+# file(s), but you are not obligated to do so. If you do not wish to do so,
+# delete this exception statement from your version. If you delete this
+# exception statement from all source files in the program, then also delete
+# it in the license file.
+#
+
+global:
+  cpp_namespace: "mongo"
+  cpp_includes:
+    - "mongo/db/ftdc/ftdc_server.h"
+
+imports:
+  - "mongo/idl/basic_types.idl"
+
+server_parameters:
+  //是否使能diagnosticDataCollectionEnabled功能
+  diagnosticDataCollectionEnabled:
+    description: "Determines whether to enable the collecting and logging of data for diagnostic purposes"
+    set_at: [startup, runtime]
+    cpp_varname: "ftdcStartupParams.enabled"
+    on_update: "onUpdateFTDCEnabled"
+
+  //默认1000
+  diagnosticDataCollectionPeriodMillis:
+    description: "Specifies the interval, in milliseconds, at which to collect diagnostic data."
+    set_at: [startup, runtime]
+    cpp_varname: "ftdcStartupParams.periodMillis"
+    on_update: "onUpdateFTDCPeriod"
+    validator:
+        gte: 100
+
+  //diagnose目录最大磁盘消耗200M
+  diagnosticDataCollectionDirectorySizeMB:
+    description: "Specifies the maximum size, in megabytes, of the diagnostic.data directory"
+    set_at: [startup, runtime]
+    cpp_varname: "ftdcStartupParams.maxDirectorySizeMB"
+    on_update: "onUpdateFTDCDirectorySize"
+    validator:
+        gte: 10
+
+  //单个文件最大10M
+  diagnosticDataCollectionFileSizeMB:
+    description: Specifies the maximum size, in megabytes, of each diagnostic file"
+    set_at: [startup, runtime]
+    cpp_varname: "ftdcStartupParams.maxFileSizeMB"
+    on_update: "onUpdateFTDCFileSize"
+    validator:
+        gte: 1
+
+  //默认2
+  diagnosticDataCollectionSamplesPerChunk:
+    description: "Internal, Specifies the number of samples per diagnostic archive chunk"
+    set_at: [startup, runtime]
+    cpp_varname: "ftdcStartupParams.maxSamplesPerArchiveMetricChunk"
+    on_update: "onUpdateFTDCSamplesPerChunk"
+    validator:
+        gte: 2
+
+  //默认10
+  diagnosticDataCollectionSamplesPerInterimUpdate:
+    description: "Internal, Specifies the number of samples per diagnostic interim update"
+    set_at: [startup, runtime]
+    cpp_varname: "ftdcStartupParams.maxSamplesPerInterimMetricChunk"
+    on_update: "onUpdateFTDCPerInterimUpdate"
+    validator:
+        gte: 2
+
+  diagnosticDataCollectionDirectoryPath:
+    description: "Specify the directory for the diagnostic data directory."
+    set_at: [startup, runtime]
+    cpp_class: DiagnosticDataCollectionDirectoryPathServerParameter
+
+  //默认false
+  diagnosticDataCollectionEnableLatencyHistograms:
+    description: "Enable the capture of opLatencies: { histograms: true } } in FTDC."
+    set_at: [startup, runtime]
+    cpp_vartype: 'AtomicWord<bool>'
+    cpp_varname: gDiagnosticDataCollectionEnableLatencyHistograms
+
+  //默认false  是否启用诊断tcmalloc
+  diagnosticDataCollectionVerboseTCMalloc:
+     description: "Enable the capture of verbose tcmalloc in FTDC."
+     set_at: [startup, runtime]
+     cpp_vartype: 'AtomicWord<bool>'
+     cpp_varname: gDiagnosticDataCollectionVerboseTCMalloc
+
+以上参数可配置，例如
+db.adminCommand({setParameter: 1, diagnosticDataCollectionSamplesPerChunk: 300})
+db.runCommand( { getParameter: 1, diagnosticDataCollectionSamplesPerChunk:1} )
+
+
+
+diagnosticDataCollectionEnabled
+diagnosticDataCollectionDirectoryPath
+diagnosticDataCollectionDirectorySizeMB
+diagnosticDataCollectionFileSizeMB
+diagnosticDataCollectionPeriodMillis
+//https://docs.mongodb.com/manual/reference/parameters/
+*/
 
 Status FTDCController::setEnabled(bool enabled) {
     stdx::lock_guard<Latch> lock(_mutex);
@@ -110,7 +232,7 @@ Status FTDCController::setDirectory(const boost::filesystem::path& path) {
     return Status::OK();
 }
 
-
+//registerMongoDCollectors  registerMongoSCollectors
 void FTDCController::addPeriodicCollector(std::unique_ptr<FTDCCollectorInterface> collector) {
     {
         stdx::lock_guard<Latch> lock(_mutex);
@@ -120,6 +242,7 @@ void FTDCController::addPeriodicCollector(std::unique_ptr<FTDCCollectorInterface
     }
 }
 
+//startFTDC
 void FTDCController::addOnRotateCollector(std::unique_ptr<FTDCCollectorInterface> collector) {
     {
         stdx::lock_guard<Latch> lock(_mutex);
@@ -129,6 +252,7 @@ void FTDCController::addOnRotateCollector(std::unique_ptr<FTDCCollectorInterface
     }
 }
 
+//// db.runCommand({getDiagnosticData:1})
 BSONObj FTDCController::getMostRecentPeriodicDocument() {
     {
         stdx::lock_guard<Latch> lock(_mutex);
@@ -136,6 +260,7 @@ BSONObj FTDCController::getMostRecentPeriodicDocument() {
     }
 }
 
+//startFTDC
 void FTDCController::start() {
     LOGV2(20625,
           "Initializing full-time diagnostic data capture",
@@ -188,6 +313,7 @@ void FTDCController::stop() {
     }
 }
 
+//FTDCController::start()
 void FTDCController::doLoop() noexcept {
     // Note: All exceptions thrown in this loop are considered process fatal. The default terminate
     // is used to provide a good stack trace of the issue.
@@ -245,7 +371,9 @@ void FTDCController::doLoop() noexcept {
 
                 _mgr = uassertStatusOK(std::move(swMgr));
             }
-
+			LOGV2(210627,
+                  "FTDCController::doLoop() yang test ...");
+			//FTDCCollectorCollection::collect
             auto collectSample = _periodicCollectors.collect(client);
 
             Status s = _mgr->writeSampleAndRotateIfNeeded(

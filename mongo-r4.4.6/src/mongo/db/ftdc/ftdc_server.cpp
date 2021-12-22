@@ -107,6 +107,7 @@ Status onUpdateFTDCEnabled(const bool value) {
     return Status::OK();
 }
 
+//diagnosticDataCollectionPeriodMillis配置
 Status onUpdateFTDCPeriod(const std::int32_t potentialNewValue) {
     auto controller = getGlobalFTDCController();
     if (controller) {
@@ -229,6 +230,7 @@ public:
         }
 
         if (gDiagnosticDataCollectionVerboseTCMalloc.load()) {
+			//db.runCommand( { serverStatus: 1, tcmalloc: 2 } ) 能输出更多tcmalloc的信息
             commandBuilder.append("tcmalloc", 2);
         }
 
@@ -247,7 +249,7 @@ public:
 // Register the FTDC system
 // Note: This must be run before the server parameters are parsed during startup
 // so that the FTDCController is initialized.
-//
+//startMongoDFTDC()
 void startFTDC(boost::filesystem::path& path,
                FTDCStartMode startupMode,
                RegisterCollectorsFunction registerCollectors) {
@@ -300,6 +302,7 @@ void startFTDC(boost::filesystem::path& path,
 
     staticFTDC = std::move(controller);
 
+	//FTDCController::start()  对应循环体在FTDCController::doLoop()
     staticFTDC->start();
 }
 

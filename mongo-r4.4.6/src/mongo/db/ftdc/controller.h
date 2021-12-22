@@ -197,7 +197,7 @@ private:
     // Config settings that are manipulated by setters via setParameter.
     FTDCConfig _configTemp;
 
-    // Set of periodic collectors
+    // Set of periodic collectors  
     FTDCCollectorCollection _periodicCollectors;
 
     // Last seen sample document from periodic collectors

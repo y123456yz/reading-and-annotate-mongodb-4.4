@@ -136,7 +136,7 @@ void validateTxnNumber(OperationContext* opCtx,
 
 /**
  * Apply the read concern from the cursor to this operation.
- */
+ */  
 void applyCursorReadConcern(OperationContext* opCtx, repl::ReadConcernArgs rcArgs) {
     const auto replicationMode = repl::ReplicationCoordinator::get(opCtx)->getReplicationMode();
 
