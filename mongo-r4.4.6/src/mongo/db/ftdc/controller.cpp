@@ -373,7 +373,7 @@ void FTDCController::doLoop() noexcept {
             }
 			LOGV2(210627,
                   "FTDCController::doLoop() yang test ...");
-			//FTDCCollectorCollection::collect
+			//FTDCCollectorCollection::collect        std::tuple<BSONObj, Date_t>的类型为collectSample
             auto collectSample = _periodicCollectors.collect(client);
 
             Status s = _mgr->writeSampleAndRotateIfNeeded(
@@ -384,6 +384,7 @@ void FTDCController::doLoop() noexcept {
             // Store a reference to the most recent document from the periodic collectors
             {
                 stdx::lock_guard<Latch> lock(_mutex);
+				//也就是最近一次获取的诊断信息
                 _mostRecentPeriodicDocument = std::get<0>(collectSample);
             }
         }

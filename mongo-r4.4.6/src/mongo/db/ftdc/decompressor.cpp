@@ -42,6 +42,7 @@
 
 namespace mongo {
 
+//getMetricsFromMetricDoc
 StatusWith<std::vector<BSONObj>> FTDCDecompressor::uncompress(ConstDataRange buf) {
     ConstDataRangeCursor compressedDataRange(buf);
 

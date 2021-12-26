@@ -217,6 +217,7 @@ public:
         commandBuilder.append("sharding", false);
         commandBuilder.append("timing", false);
         commandBuilder.append("defaultRWConcern", false);
+		//db.runCommand( { serverStatus: 1, mirroredReads: 1 } )
         commandBuilder.append(MirrorMaestro::kServerStatusSectionName, true);
 
         // Exclude 'serverStatus.transactions.lastCommittedTransactions' because it triggers

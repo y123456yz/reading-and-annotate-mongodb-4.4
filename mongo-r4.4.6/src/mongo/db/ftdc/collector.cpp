@@ -26,6 +26,7 @@
  *    exception statement from all source files in the program, then also delete
  *    it in the license file.
  */
+#define MONGO_LOGV2_DEFAULT_COMPONENT ::mongo::logv2::LogComponent::kFTDC
 
 #include "mongo/platform/basic.h"
 
@@ -40,6 +41,7 @@
 #include "mongo/db/jsobj.h"
 #include "mongo/db/operation_context.h"
 #include "mongo/util/time_support.h"
+#include "mongo/logv2/log.h"
 
 namespace mongo {
 //FTDCController::addPeriodicCollector
@@ -75,9 +77,12 @@ std::tuple<BSONObj, Date_t> FTDCCollectorCollection::collect(Client* client) {
     invariant(RecoveryUnit::ReadSource::kNoTimestamp ==
               opCtx->recoveryUnit()->getTimestampReadSource());
 
+	//不同指标对应不同collector
     for (auto& collector : _collectors) {
         BSONObjBuilder subObjBuilder(builder.subobjStart(collector->name()));
 
+		LOGV2_DEBUG(220627, 2, "FTDCCollectorCollection::collect",
+			"collector name: "_attr = collector->name());
         // Add a Date_t before and after each BSON is collected so that we can track timing of the
         // collector.
         Date_t now = start;
@@ -99,9 +104,13 @@ std::tuple<BSONObj, Date_t> FTDCCollectorCollection::collect(Client* client) {
         end = client->getServiceContext()->getPreciseClockSource()->now();
         subObjBuilder.appendDate(kFTDCCollectEndField, end);
     }
-
+	
     builder.appendDate(kFTDCCollectEndField, end);
 
+
+    LOGV2_DEBUG(220627, 2, "FTDCCollectorCollection::collect","diagnose x: "_attr = builder.asTempObj());
+
+	//本次采集的内容全部在builder，时间记录到start
     return std::tuple<BSONObj, Date_t>(builder.obj(), start);
 }
 

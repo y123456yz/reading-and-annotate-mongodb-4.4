@@ -76,6 +76,7 @@ struct FTDCConfig {
     /**
      * Maximum number of samples to collect in an archive metric chunk for long term storage.
      */
+    // "diagnosticDataCollectionSamplesPerChunk" : 300,  ÉúÐ§¼ûFTDCCompressor::_reset
     std::uint32_t maxSamplesPerArchiveMetricChunk;
 
     /**

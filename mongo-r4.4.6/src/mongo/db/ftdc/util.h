@@ -57,14 +57,14 @@ enum class FTDCType : std::int32_t {
      *
      * See createBSONMetadataChunkDocument
      */
-    kMetadata = 0,
+    kMetadata = 0, //metrics中的元数据信息
 
     /**
      * A metrics chunk is composed of a header + a compressed metric chunk.
      *
      * See createBSONMetricChunkDocument
      */
-    kMetricChunk = 1,
+    kMetricChunk = 1, //诊断数据信息
 };
 
 

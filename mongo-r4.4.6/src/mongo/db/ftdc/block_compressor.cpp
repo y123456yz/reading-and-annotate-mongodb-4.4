@@ -36,7 +36,7 @@
 #include "mongo/util/str.h"
 
 namespace mongo {
-
+//FTDCCompressor::getCompressedSamples()   º”√‹
 StatusWith<ConstDataRange> BlockCompressor::compress(ConstDataRange source) {
     z_stream stream;
     int level = Z_DEFAULT_COMPRESSION;
@@ -77,6 +77,7 @@ StatusWith<ConstDataRange> BlockCompressor::compress(ConstDataRange source) {
     return ConstDataRange(_buffer.data(), stream.total_out);
 }
 
+//FTDCDecompressor::uncompress Ω‚√‹
 StatusWith<ConstDataRange> BlockCompressor::uncompress(ConstDataRange source,
                                                        size_t uncompressedLength) {
     z_stream stream;

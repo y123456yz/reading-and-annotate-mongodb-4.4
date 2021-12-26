@@ -165,12 +165,14 @@ private:
     BSONElement _current;
 };
 
+//比较两个定时周期内的诊断项内容是否完全一样，一样返回true，同时存储解析的自动内容到metrics
+//FTDCCompressor::addSample
 StatusWith<bool> extractMetricsFromDocument(const BSONObj& referenceDoc,
                                             const BSONObj& currentDoc,
                                             std::vector<std::uint64_t>* metrics,
                                             bool matches,
                                             size_t recursion) {
-    if (recursion > kMaxRecursion) {
+    if (recursion > kMaxRecursion) { //统计项里面可能会有嵌套   如果零时修改diagnose内存的一些配置，可能本次和上次的诊断项内容不一致
         return {ErrorCodes::BadValue, "Recursion limit reached."};
     }
 
@@ -191,6 +193,9 @@ StatusWith<bool> extractMetricsFromDocument(const BSONObj& referenceDoc,
         BSONElement referenceElement = matches ? itReference.next() : BSONElement();
 
         if (matches) {
+			//例如 db.adminCommand( { setParameter: 1, diagnosticDataCollectionEnableLatencyHistograms:true} )修改参数
+			//{"t":{"$date":"2021-12-25T17:19:01.002+08:00"},"s":"D4", "c":"FTDC",     "id":20634,   "ctx":"ftdc","msg":"full-time diagnostic data capture schema change: field name change","attr":{"from":"latency","to":"histogram"}}
+			//{"t":{"$date":"2021-12-25T17:19:01.002+08:00"},"s":"D4", "c":"FTDC",     "id":20635,   "ctx":"ftdc","msg":"full-time diagnostic data capture schema change: field type change","attr":{"fieldName":"latency","oldType":18,"newType":4}}
             // Check for matching field names
             if (referenceElement.fieldNameStringData() != currentElement.fieldNameStringData()) {
                 LOGV2_DEBUG(20634,
@@ -301,6 +306,7 @@ StatusWith<bool> extractMetricsFromDocument(const BSONObj& referenceDoc,
     return extractMetricsFromDocument(referenceDoc, currentDoc, metrics, true, 0);
 }
 
+//FTDCDecompressor::uncompress
 namespace {
 Status constructDocumentFromMetrics(const BSONObj& referenceDocument,
                                     BSONObjBuilder& builder,
@@ -408,6 +414,8 @@ StatusWith<BSONObj> constructDocumentFromMetrics(const BSONObj& ref,
     return b.obj();
 }
 
+//FTDCFileWriter::writeMetadata
+//{"_id":{"$date":"2021-11-26T06:08:54.009Z"},"type":0,"doc":{xxx}  元数据信息，也就是metrics解析后的第一条json数据
 BSONObj createBSONMetadataDocument(const BSONObj& metadata, Date_t date) {
     BSONObjBuilder builder;
     builder.appendDate(kFTDCIdField, date);
@@ -417,6 +425,9 @@ BSONObj createBSONMetadataDocument(const BSONObj& metadata, Date_t date) {
     return builder.obj();
 }
 
+//FTDCFileWriter::writeSample    FTDCFileWriter::flush
+//{"_id":{"$date":"2021-11-26T06:08:54.009Z"},"type":1,"data":{"$binary":"xxxx"}   xxxx是加密的诊断项信息
+//诊断数据信息 _id+doc+
 BSONObj createBSONMetricChunkDocument(ConstDataRange buf, Date_t date) {
     BSONObjBuilder builder;
 
@@ -472,6 +483,7 @@ StatusWith<BSONObj> getBSONDocumentFromMetadataDoc(const BSONObj& obj) {
     return {element.Obj()};
 }
 
+//FTDCFileReader::hasNext()
 StatusWith<std::vector<BSONObj>> getMetricsFromMetricDoc(const BSONObj& obj,
                                                          FTDCDecompressor* decompressor) {
     if (kDebugBuild) {
@@ -493,6 +505,7 @@ StatusWith<std::vector<BSONObj>> getMetricsFromMetricDoc(const BSONObj& obj,
                 str::stream() << "Field " << std::string(kFTDCTypeField) << " is not a BinData."};
     }
 
+	//FTDCDecompressor::uncompress
     return decompressor->uncompress({buffer, static_cast<std::size_t>(length)});
 }
 

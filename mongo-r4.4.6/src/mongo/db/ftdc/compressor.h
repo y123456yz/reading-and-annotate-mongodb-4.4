@@ -165,16 +165,20 @@ private:
     Date_t _referenceDocDate;
 
     // Number of Metrics for the reference document
+    //多少个Metric，一个Metrics对应一次诊断项中的所有的Metric
     std::uint32_t _metricsCount{0};
 
     // Number of deltas recorded
+    //实际上就是采样次数
     std::uint32_t _deltaCount{0};
 
     // Max deltas for the current chunk
+    //maxSamplesPerArchiveMetricChunk配置-1
     std::size_t _maxDeltas{0};
 
     // Array of deltas - M x S
-    // _deltas[Metrics][Samples]
+    // _deltas[Metrics][Metrics]
+    //数组中连续的多次诊断项Metrics信息连续存在数组空间，参考FTDCCompressor::addSample->FTDCCompressor::_reset
     std::vector<std::uint64_t> _deltas;
 
     // Buffer for metric chunk compressed = uncompressed length + compressed data
@@ -184,6 +188,7 @@ private:
     BufBuilder _uncompressedChunkBuffer;
 
     // Buffer to hold metrics
+    //本次采集的诊断项目信息存到这里，参考extractMetricsFromDocument
     std::vector<std::uint64_t> _metrics;
     std::vector<std::uint64_t> _prevmetrics;
 };

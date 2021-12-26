@@ -26,6 +26,8 @@
  *    exception statement from all source files in the program, then also delete
  *    it in the license file.
  */
+#define MONGO_LOGV2_DEFAULT_COMPONENT ::mongo::logv2::LogComponent::kFTDC
+#include "mongo/logv2/log.h"
 
 #include "mongo/platform/basic.h"
 
@@ -78,6 +80,7 @@ Status FTDCFileWriter::open(const boost::filesystem::path& file) {
     return Status::OK();
 }
 
+//buf数据写入文件  FTDCFileWriter::writeSample
 Status FTDCFileWriter::writeInterimFileBuffer(ConstDataRange buf) {
     // Fixed size interim stream
     std::ofstream interimStream;
@@ -143,6 +146,8 @@ Status FTDCFileWriter::writeArchiveFileBuffer(ConstDataRange buf) {
     return Status::OK();
 }
 
+//FTDCFileManager::openArchiveFile  
+//文件打开或者切割的时候才需要些元数据
 Status FTDCFileWriter::writeMetadata(const BSONObj& metadata, Date_t date) {
     BSONObj wrapped = FTDCBSONUtil::createBSONMetadataDocument(metadata, date);
 
@@ -169,8 +174,13 @@ Status FTDCFileWriter::writeSample(const BSONObj& sample, Date_t date) {
             return swBuf.getStatus();
         }
 
+		//swbuf中的数据生成bson格式
         BSONObj o = FTDCBSONUtil::createBSONMetricChunkDocument(std::get<0>(swBuf.getValue()),
                                                                 std::get<1>(swBuf.getValue()));
+
+		//这里打印的二进制通过echo "xx" |  ruby -rzlib -rbase64 -e 'd = STDIN.read; print Zlib::Inflate.new.inflate(Base64.decode64(d)[4..-1])' | ./bsondump --quiet
+		//XX为二进制内容，反解析后面的明文内容就是diagnose反解析的内容
+		LOGV2_DEBUG(220327, 2, "FTDCFileWriter::writeSample","writeSample x: "_attr = o);
         return writeInterimFileBuffer({o.objdata(), static_cast<size_t>(o.objsize())});
     }
 

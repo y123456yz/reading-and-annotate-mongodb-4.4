@@ -43,9 +43,23 @@ namespace mongo {
 
 using std::swap;
 
+
+/**
+ * Add a bson document containing metrics into the compressor.
+ *
+ * Returns flag indicating whether the caller should flush the compressor buffer to disk.
+ *	1. kCompressorFull if the compressor is considered full.
+ *	2. kSchemaChanged if there was a schema change, and buffer should be flushed.
+ *	3. kHasSpace if it has room for more metrics in the current buffer.
+ *
+ * date is the date at which the sample as started to be captured. It will be saved in the
+ * compressor if this sample is used as the reference document.N
+ */
+//FTDCFileWriter::writeSample
 StatusWith<boost::optional<std::tuple<ConstDataRange, FTDCCompressor::CompressorState, Date_t>>>
 FTDCCompressor::addSample(const BSONObj& sample, Date_t date) {
     if (_referenceDoc.isEmpty()) {
+		//第一次启动的时候走这里，解析除诊断项中的成员信息_metrics
         auto swMatchesReference =
             FTDCBSONUtil::extractMetricsFromDocument(sample, sample, &_metrics);
         if (!swMatchesReference.isOK()) {
@@ -56,18 +70,21 @@ FTDCCompressor::addSample(const BSONObj& sample, Date_t date) {
         return {boost::none};
     }
 
+	//上一次获取的诊断信息全部在_metrics中
     _metrics.resize(0);
 
     auto swMatches = FTDCBSONUtil::extractMetricsFromDocument(_referenceDoc, sample, &_metrics);
 
-    if (!swMatches.isOK()) {
+    if (!swMatches.isOK()) {//异常处理，例如嵌套递归太多
         return swMatches.getStatus();
     }
 
+	//schema发生了变化，或者schema没有发生变化
     dassert((swMatches.getValue() == false || _metricsCount == _metrics.size()) &&
             _metrics.size() < std::numeric_limits<std::uint32_t>::max());
 
     // We need to flush the current set of samples since the BSON schema has changed.
+    //例如配置发生变化，则内容schema就不一样了，这时候先把上一次的内容刷盘
     if (!swMatches.getValue()) {
         auto swCompressedSamples = getCompressedSamples();
 
@@ -84,7 +101,7 @@ FTDCCompressor::addSample(const BSONObj& sample, Date_t date) {
     }
 
 
-    // Add another sample
+    // Add another sample   _deltas中的取值类型只会是isFTDCType，参考db.runCommand({getDiagnosticData:1})
     for (std::size_t i = 0; i < _metrics.size(); ++i) {
         // NOTE: This touches a lot of cache lines so that compression code can be more effcient.
         _deltas[getArrayOffset(_maxDeltas, _deltaCount, i)] = _metrics[i] - _prevmetrics[i];
@@ -96,6 +113,7 @@ FTDCCompressor::addSample(const BSONObj& sample, Date_t date) {
     swap(_prevmetrics, _metrics);
 
     // If the count is full, flush
+    //诊断采样次数
     if (_deltaCount == _maxDeltas) {
         auto swCompressedSamples = getCompressedSamples();
 
@@ -116,6 +134,7 @@ FTDCCompressor::addSample(const BSONObj& sample, Date_t date) {
     return {boost::none};
 }
 
+//FTDCFileWriter::writeSample
 StatusWith<std::tuple<ConstDataRange, Date_t>> FTDCCompressor::getCompressedSamples() {
     _uncompressedChunkBuffer.setlen(0);
 
@@ -223,6 +242,7 @@ void FTDCCompressor::reset() {
     _reset(BSONObj(), Date_t());
 }
 
+//FTDCCompressor::addSample
 void FTDCCompressor::_reset(const BSONObj& referenceDoc, Date_t date) {
     _referenceDoc = referenceDoc;
     _referenceDocDate = date;

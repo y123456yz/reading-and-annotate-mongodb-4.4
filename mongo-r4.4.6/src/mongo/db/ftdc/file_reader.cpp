@@ -49,6 +49,7 @@ FTDCFileReader::~FTDCFileReader() {
     _stream.close();
 }
 
+//FTDCFileManager::recoverInterimFile()
 StatusWith<bool> FTDCFileReader::hasNext() {
     while (true) {
         if (_state == State::kNeedsDoc) {

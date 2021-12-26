@@ -167,6 +167,8 @@ StatusWith<boost::filesystem::path> FTDCFileManager::generateArchiveFileName(
     return {fileName};
 }
 
+//FTDCFileManager::rotate  FTDCFileManager::create
+
 Status FTDCFileManager::openArchiveFile(
     Client* client,
     const boost::filesystem::path& path,
@@ -246,6 +248,7 @@ Status FTDCFileManager::trimDirectory(std::vector<boost::filesystem::path>& file
     return Status::OK();
 }
 
+//程序启动的时候从文件中获取
 std::vector<std::tuple<FTDCBSONUtil::FTDCType, BSONObj, Date_t>>
 FTDCFileManager::recoverInterimFile() {
     decltype(recoverInterimFile()) docs;
@@ -324,6 +327,17 @@ Status FTDCFileManager::rotate(Client* client) {
     return openArchiveFile(client, swFile.getValue(), {});
 }
 
+/*
+{
+  "start": {"$date": "2021-12-21T10:01:32.000Z"  },  
+  "serverStatus": {"start": {      "$date": "2021-12-21T10:01:32.000Z"    }, xxxxx}
+  xxxxxxx
+  "systemMetrics": {    "start": {      "$date": "2021-12-21T09:57:16.001Z"    }, xxxxx}
+  "end": {    "$date": "2021-12-21T09:57:16.004Z"  }
+}
+*/
+//sample内容参考FTDCCollectorCollection::collect, 也就是start和end间的真实监控统计项
+//FTDCController::doLoop() 调用
 Status FTDCFileManager::writeSampleAndRotateIfNeeded(Client* client,
                                                      const BSONObj& sample,
                                                      Date_t date) {
