@@ -71,18 +71,20 @@ struct FTDCConfig {
      * FTDC is always run at the beginning at the period, and skips periods if the collector runs
      * for more then a single period.
      */
+    //diagnosticDataCollectionPeriodMillis配置，默认一s钟，ftdc线程主循环体采样周期
     Milliseconds period;
 
     /**
      * Maximum number of samples to collect in an archive metric chunk for long term storage.
      */
     // "diagnosticDataCollectionSamplesPerChunk" : 300,  生效见FTDCCompressor::_reset
+    //metrics.2021-12-27T03-21-49Z-0000文件相关更新操作
     std::uint32_t maxSamplesPerArchiveMetricChunk;
 
     /**
      * Maximum number of samples to collect in an interim metric chunk in case the process
      * terminates.
-     */
+     */ ////diagnosticDataCollectionSamplesPerInterimUpdate配置，metrics.interim文件跟新的时间
     std::uint32_t maxSamplesPerInterimMetricChunk;
 
     static const bool kEnabledDefault = true;

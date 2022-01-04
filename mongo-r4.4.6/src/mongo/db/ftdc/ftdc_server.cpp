@@ -153,6 +153,10 @@ Status onUpdateFTDCFileSize(const std::int32_t potentialNewValue) {
     return Status::OK();
 }
 
+// "diagnosticDataCollectionSamplesPerChunk" : 300,  生效见FTDCCompressor::_reset
+//metrics.2021-12-27T03-21-49Z-0000文件相关更新操作
+
+//diagnosticDataCollectionSamplesPerChunk
 Status onUpdateFTDCSamplesPerChunk(const std::int32_t potentialNewValue) {
     auto controller = getGlobalFTDCController();
     if (controller) {
@@ -162,6 +166,7 @@ Status onUpdateFTDCSamplesPerChunk(const std::int32_t potentialNewValue) {
     return Status::OK();
 }
 
+//diagnosticDataCollectionSamplesPerInterimUpdate配置，metrics.interim文件跟新的时间
 Status onUpdateFTDCPerInterimUpdate(const std::int32_t potentialNewValue) {
     auto controller = getGlobalFTDCController();
     if (controller) {

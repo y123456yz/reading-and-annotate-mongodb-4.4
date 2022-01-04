@@ -53,6 +53,7 @@ namespace {
 constexpr auto kTimingSection = "timing"_sd;
 }  // namespace
 
+//ftdc模块和db.serverstatus()命令都会走到这里
 class CmdServerStatus : public BasicCommand {
 public:
     CmdServerStatus() : BasicCommand("serverStatus"), _started(Date_t::now()), _runCalled(false) {}
@@ -106,6 +107,7 @@ public:
 
         // --- all sections
 
+		//有那些section可以搜索 public ServerStatusSection {，都在该类得继承类中实现具体section
         for (SectionMap::const_iterator i = _sections.begin(); i != _sections.end(); ++i) {
             ServerStatusSection* section = i->second;
 
@@ -114,13 +116,14 @@ public:
             if (!authSession->isAuthorizedForPrivileges(requiredPrivileges))
                 continue;
 
+			//db.serverstatus()可以匹配所有section，如果是db.serverstatus().repl则只能匹配repl
             bool include = section->includeByDefault();
             const auto& elem = cmdObj[section->getSectionName()];
             if (elem.type()) {
                 include = elem.trueValue();
             }
 
-            if (!include) {
+            if (!include) { 
                 continue;
             }
 

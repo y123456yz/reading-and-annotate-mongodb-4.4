@@ -102,6 +102,8 @@ public:
      * The a buffer will decompress to (1 + getCountCount). The extra 1 comes
      * from the reference document.
      */
+
+    //采样数
     std::size_t getSampleCount() const {
         // TODO: This method should probably be renamed, since it currently
         // returns the number of deltas, which does not include the sample
@@ -169,7 +171,7 @@ private:
     std::uint32_t _metricsCount{0};
 
     // Number of deltas recorded
-    //实际上就是采样次数
+    //实际上就是采样次数，见getSampleCount
     std::uint32_t _deltaCount{0};
 
     // Max deltas for the current chunk

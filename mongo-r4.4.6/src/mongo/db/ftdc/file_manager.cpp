@@ -167,8 +167,8 @@ StatusWith<boost::filesystem::path> FTDCFileManager::generateArchiveFileName(
     return {fileName};
 }
 
+//文件打开或者切割的时候才需要些元数据
 //FTDCFileManager::rotate  FTDCFileManager::create
-
 Status FTDCFileManager::openArchiveFile(
     Client* client,
     const boost::filesystem::path& path,
@@ -249,10 +249,12 @@ Status FTDCFileManager::trimDirectory(std::vector<boost::filesystem::path>& file
 }
 
 //程序启动的时候从文件中获取
+//读取"metrics.interim"文件内容填充
 std::vector<std::tuple<FTDCBSONUtil::FTDCType, BSONObj, Date_t>>
 FTDCFileManager::recoverInterimFile() {
     decltype(recoverInterimFile()) docs;
 
+	//"metrics.interim"
     auto interimFile = FTDCUtil::getInterimFile(_path);
 
     // Nothing to do if it does not exist

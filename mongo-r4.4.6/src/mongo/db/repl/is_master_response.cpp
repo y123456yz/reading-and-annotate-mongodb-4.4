@@ -47,6 +47,7 @@ const std::string kIsMasterFieldName = "ismaster";
 const std::string kSecondaryFieldName = "secondary";
 const std::string kSetNameFieldName = "setName";
 const std::string kSetVersionFieldName = "setVersion";
+//4.4Ìí¼Ó
 const std::string kTopologyVersionFieldName = "topologyVersion";
 const std::string kHostsFieldName = "hosts";
 const std::string kPassivesFieldName = "passives";

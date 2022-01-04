@@ -486,6 +486,7 @@ public:
      * This will opt out of the ticket mechanism. This should be used sparingly for special purpose
      * threads, such as FTDC and committing or aborting prepared transactions.
      */
+    //例如ftdc就会跳过，参考FTDCCollectorCollection::collect  _releaseTransactionResourcesToOpCtx
     void skipAcquireTicket() {
         // Should not hold or wait for the ticket.
         invariant(isNoop() || getClientState() == Locker::ClientState::kInactive);

@@ -90,7 +90,7 @@ constexpr auto kLowerCaseIsMasterString = "ismaster"_sd;
 /**
  * Appends replication-related fields to the isMaster response. Returns the topology version that
  * was included in the response.
- */
+ */ //db.serverstatus().repl
 TopologyVersion appendReplicationInfo(OperationContext* opCtx,
                                       BSONObjBuilder& result,
                                       int level,
@@ -222,6 +222,7 @@ TopologyVersion appendReplicationInfo(OperationContext* opCtx,
     return currentTopologyVersion;
 }
 
+//db.serverstatus().repl
 class ReplicationInfoServerStatus : public ServerStatusSection {
 public:
     ReplicationInfoServerStatus() : ServerStatusSection("repl") {}
@@ -230,6 +231,7 @@ public:
         return true;
     }
 
+	//ReplicationInfoServerStatus::generateSection
     BSONObj generateSection(OperationContext* opCtx,
                             const BSONElement& configElement) const override {
         if (!ReplicationCoordinator::get(opCtx)->isReplEnabled()) {

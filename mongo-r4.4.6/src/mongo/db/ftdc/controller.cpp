@@ -210,6 +210,7 @@ void FTDCController::setMaxSamplesPerArchiveMetricChunk(size_t size) {
     _condvar.notify_one();
 }
 
+//diagnosticDataCollectionSamplesPerInterimUpdate配置，metrics.interim文件跟新的时间
 void FTDCController::setMaxSamplesPerInterimMetricChunk(size_t size) {
     stdx::lock_guard<Latch> lock(_mutex);
     _configTemp.maxSamplesPerInterimMetricChunk = size;
@@ -332,6 +333,7 @@ void FTDCController::doLoop() noexcept {
         auto now = getGlobalServiceContext()->getPreciseClockSource()->now();
 
         // Get next time to run at
+        //diagnosticDataCollectionPeriodMillis配置，默认一分钟，ftdc线程主循环体采样定时周期
         auto next_time = FTDCUtil::roundTime(now, _config.period);
 
         // Wait for the next run or signal to shutdown
@@ -340,6 +342,7 @@ void FTDCController::doLoop() noexcept {
             MONGO_IDLE_THREAD_BLOCK;
 
             // We ignore spurious wakeups by just doing an iteration of the loop
+            //类似定时器，如果由参数配置则触发返回，或者定时时间到返回
             auto status = _condvar.wait_until(lock, next_time.toSystemTimePoint());
 
             // Are we done running?
@@ -356,6 +359,7 @@ void FTDCController::doLoop() noexcept {
 
             // if we hit a timeout on the condvar, we need to do another collection
             // if we were signalled, then we have a config update only or were asked to stop
+            //如果是修改了配置参数引起的事件，则暂时忽略，继续通过_condvar.wait_until等待超时事件到
             if (status == stdx::cv_status::no_timeout) {
                 continue;
             }
@@ -363,6 +367,7 @@ void FTDCController::doLoop() noexcept {
 
         // TODO: consider only running this thread if we are enabled
         // for now, we just keep an idle thread as it is simpler
+        //ftdc通过diagnosticDataCollectionEnabled使能
         if (_config.enabled) {
             // Delay initialization of FTDCFileManager until we are sure the user has enabled
             // FTDC
@@ -384,7 +389,7 @@ void FTDCController::doLoop() noexcept {
             // Store a reference to the most recent document from the periodic collectors
             {
                 stdx::lock_guard<Latch> lock(_mutex);
-				//也就是最近一次获取的诊断信息
+				//也就是最近一次获取的全量诊断信息
                 _mostRecentPeriodicDocument = std::get<0>(collectSample);
             }
         }

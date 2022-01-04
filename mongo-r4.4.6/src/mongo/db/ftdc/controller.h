@@ -205,6 +205,8 @@ private:
     BSONObj _mostRecentPeriodicDocument;
 
     // Set of file rotation collectors
+    //FTDCController::addOnRotateCollector中注册
+    //FTDCFileManager::openArchiveFile中记录到文件
     FTDCCollectorCollection _rotateCollectors;
 
     // File manager that manages file rotation, and logging

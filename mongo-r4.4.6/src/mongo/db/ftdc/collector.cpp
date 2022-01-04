@@ -50,7 +50,8 @@ void FTDCCollectorCollection::add(std::unique_ptr<FTDCCollectorInterface> collec
     _collectors.emplace_back(std::move(collector));
 }
 
-//FTDCController::doLoop()
+//FTDCController::doLoop()  
+//收集不同FTDCCollectorInterface的统计信息
 std::tuple<BSONObj, Date_t> FTDCCollectorCollection::collect(Client* client) {
     // If there are no collectors, just return an empty BSONObj so that that are caller knows we did
     // not collect anything
@@ -71,7 +72,9 @@ std::tuple<BSONObj, Date_t> FTDCCollectorCollection::collect(Client* client) {
     // batches that are taking a long time.
     auto opCtx = client->makeOperationContext();
     ShouldNotConflictWithSecondaryBatchApplicationBlock shouldNotConflictBlock(opCtx->lockState());
-    opCtx->lockState()->skipAcquireTicket();
+
+	//跳过获取ticket锁操作，避免因为获取ticket排队，从而保证获取诊断数据的实时性
+	opCtx->lockState()->skipAcquireTicket();
 
     // Ensure future transactions read without a timestamp.
     invariant(RecoveryUnit::ReadSource::kNoTimestamp ==

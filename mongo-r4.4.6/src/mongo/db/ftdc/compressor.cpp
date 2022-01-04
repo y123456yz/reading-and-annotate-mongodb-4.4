@@ -26,6 +26,8 @@
  *    exception statement from all source files in the program, then also delete
  *    it in the license file.
  */
+#define MONGO_LOGV2_DEFAULT_COMPONENT ::mongo::logv2::LogComponent::kFTDC
+#include "mongo/logv2/log.h"
 
 #include "mongo/platform/basic.h"
 
@@ -138,7 +140,10 @@ FTDCCompressor::addSample(const BSONObj& sample, Date_t date) {
 StatusWith<std::tuple<ConstDataRange, Date_t>> FTDCCompressor::getCompressedSamples() {
     _uncompressedChunkBuffer.setlen(0);
 
+	LOGV2_DEBUG(220427, 2, "FTDCCompressor::getCompressedSamples ", "_metricsCount:"_attr = _metricsCount, "_deltaCount:"_attr = _deltaCount);
+	LOGV2_DEBUG(220427, 2, "FTDCCompressor::getCompressedSamples","_referenceDoc x: "_attr = _referenceDoc);
     // Append reference document - BSON Object
+    //_referenceDoc先加入到_uncompressedChunkBuffer
     _uncompressedChunkBuffer.appendBuf(_referenceDoc.objdata(), _referenceDoc.objsize());
 
     // Append count of metrics - uint32 little endian
@@ -175,11 +180,13 @@ StatusWith<std::tuple<ConstDataRange, Date_t>> FTDCCompressor::getCompressedSamp
                     continue;
                 }
 
+				//连续的多个0先添加到_uncompressedChunkBuffer
                 // If we have a non-zero sample, then write out all the accumulated zero samples.
+                //例如连续10个metrics都为0，则记录0，9,第一个0代表后面的metrics为0，除了第一个0还有9个，一共10个metrics为0
                 if (zeroesCount > 0) {
-                    auto s1 = db.writeAndAdvance(FTDCVarInt(0));
+                    auto s1 = db.writeAndAdvance(FTDCVarInt(0)); //值为0的记录下来
                     if (!s1.isOK()) {
-                        return s1;
+                        return s1; //异常直接返回
                     }
 
                     auto s2 = db.writeAndAdvance(FTDCVarInt(zeroesCount - 1));
@@ -190,6 +197,7 @@ StatusWith<std::tuple<ConstDataRange, Date_t>> FTDCCompressor::getCompressedSamp
                     zeroesCount = 0;
                 }
 
+				//非0的metrics直接记录
                 auto s3 = db.writeAndAdvance(FTDCVarInt(delta));
                 if (!s3.isOK()) {
                     return s3;
@@ -212,11 +220,13 @@ StatusWith<std::tuple<ConstDataRange, Date_t>> FTDCCompressor::getCompressedSamp
             }
         }
 
+		//增量数据添加到_uncompressedChunkBuffer末尾
         // Append the entire compacted metric chunk into the uncompressed buffer
         ConstDataRange cdr = db.getCursor();
         _uncompressedChunkBuffer.appendBuf(cdr.data(), cdr.length());
     }
 
+	//压缩
     auto swDest = _compressor.compress(
         ConstDataRange(_uncompressedChunkBuffer.buf(), _uncompressedChunkBuffer.len()));
 
