@@ -1275,6 +1275,8 @@ void TransactionParticipant::Participant::addTransactionOperation(
         ++p().numberOfPreImagesToWrite;
     }
 
+	//一个事务涉及到多条oplog，4.0是多条oplog之和不超过16M。4.2  4.4是单条oplog不超过16M哈，所以4.2  4.4有改进
+	//一个事务里面涉及到很多条oplog，这些oplog之和不会超过transactionSizeLimitBytes这个配置限制，这个值无限大。所以只要单条oplog不超过16M，就不会有问题。
     auto transactionSizeLimitBytes = gTransactionSizeLimitBytes.load();
     uassert(ErrorCodes::TransactionTooLarge,
             str::stream() << "Total size of all transaction operations must be less than "

@@ -88,7 +88,7 @@ void registerMongoSCollectors(FTDCController* controller) {
     // PoolStats
     controller->addPeriodicCollector(std::make_unique<ConnPoolStatsCollector>());
 
-    // GetDefaultRWConcern
+    // GetDefaultRWConcern  db.adminCommand({"getDefaultRWConcern": 1})
     controller->addOnRotateCollector(std::make_unique<FTDCSimpleInternalCommandCollector>(
         "getDefaultRWConcern",
         "getDefaultRWConcern",

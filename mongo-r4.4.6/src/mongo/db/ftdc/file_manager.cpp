@@ -130,6 +130,7 @@ std::vector<boost::filesystem::path> FTDCFileManager::scanDirectory() {
     return files;
 }
 
+//生成类似metrics.2021-11-09T08-10-30Z-00000文件名
 StatusWith<boost::filesystem::path> FTDCFileManager::generateArchiveFileName(
     const boost::filesystem::path& path, StringData suffix) {
     auto fileName = path;

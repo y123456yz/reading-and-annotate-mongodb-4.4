@@ -80,12 +80,14 @@ Status FTDCFileWriter::open(const boost::filesystem::path& file) {
     return Status::OK();
 }
 
-//buf数据写入文件  FTDCFileWriter::writeSample
+//buf数据写入"metrics.interim"文件  FTDCFileWriter::writeSample
+//本次diagnosticDataCollectionSamplesPerChunk内的全量+增量信息记录到"metrics.interim"
 Status FTDCFileWriter::writeInterimFileBuffer(ConstDataRange buf) {
     // Fixed size interim stream
     std::ofstream interimStream;
 
     // Open up a temporary interim file
+    //打开"metrics.interim.temp"
     interimStream.open(_interimTempFile.c_str(),
                        std::ios_base::out | std::ios_base::binary | std::ios_base::trunc);
 
@@ -107,6 +109,7 @@ Status FTDCFileWriter::writeInterimFileBuffer(ConstDataRange buf) {
     interimStream.close();
 
     // Now that the temp interim file is closed, rename the temp interim file to the real one.
+    ////"metrics.interim.temp"临时文件改名为"metrics.interim";
     boost::system::error_code ec;
     boost::filesystem::rename(_interimTempFile, _interimFile, ec);
     if (ec) {
@@ -118,6 +121,8 @@ Status FTDCFileWriter::writeInterimFileBuffer(ConstDataRange buf) {
     return Status::OK();
 }
 
+//FTDCFileWriter::writeMetadata   FTDCFileWriter::flush
+//buf内容写入metrics.2021-11-09T08-10-30Z-00000文件
 Status FTDCFileWriter::writeArchiveFileBuffer(ConstDataRange buf) {
     _archiveStream.write(buf.data(), buf.length());
 
@@ -163,9 +168,12 @@ Status FTDCFileWriter::writeSample(const BSONObj& sample, Date_t date) {
     }
 
     if (ret.getValue().is_initialized()) {
+		//diagnosticDataCollectionSamplesPerChunk采样数满了,这时候直接把本次diagnosticDataCollectionSamplesPerChunk周期
+		//内的所有全量+增量数据追加到metrics.2021-11-09T08-10-30Z-00000文件
         return flush(std::get<0>(ret.getValue().get()), std::get<2>(ret.getValue().get()));
     }
 
+	//diagnosticDataCollectionSamplesPerInterimUpdate一个周期向metrics.interim中写入全量+增量数据
     if (_compressor.getSampleCount() != 0 &&
         (_compressor.getSampleCount() % _config->maxSamplesPerInterimMetricChunk) == 0) {
         // Check if we want to do a partial write to the interim buffer
@@ -187,6 +195,7 @@ Status FTDCFileWriter::writeSample(const BSONObj& sample, Date_t date) {
     return Status::OK();
 }
 
+//FTDCFileWriter::writeSample
 Status FTDCFileWriter::flush(const boost::optional<ConstDataRange>& range, Date_t date) {
     if (!range.is_initialized()) {
         if (_compressor.hasDataToFlush()) {

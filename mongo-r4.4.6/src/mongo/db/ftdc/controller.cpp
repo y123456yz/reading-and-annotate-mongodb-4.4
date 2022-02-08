@@ -234,6 +234,7 @@ Status FTDCController::setDirectory(const boost::filesystem::path& path) {
 }
 
 //registerMongoDCollectors  registerMongoSCollectors
+//ftdc使能后才有效的诊断数据
 void FTDCController::addPeriodicCollector(std::unique_ptr<FTDCCollectorInterface> collector) {
     {
         stdx::lock_guard<Latch> lock(_mutex);
@@ -244,6 +245,7 @@ void FTDCController::addPeriodicCollector(std::unique_ptr<FTDCCollectorInterface
 }
 
 //startFTDC
+//启动即生效的诊断数据，不需要开关控制
 void FTDCController::addOnRotateCollector(std::unique_ptr<FTDCCollectorInterface> collector) {
     {
         stdx::lock_guard<Latch> lock(_mutex);

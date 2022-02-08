@@ -122,15 +122,21 @@ private:
     const FTDCConfig* const _config;
 
     // Archive file name
+    //类似metrics.2021-11-09T08-10-30Z-00000文件
     boost::filesystem::path _archiveFile;
 
     // Interim file name
+    //FTDCFileWriter::open
+    //metrics.interim文件内容  const char kFTDCInterimFile[] = "metrics.interim";
     boost::filesystem::path _interimFile;
 
     // Interim temp file name
+    //"metrics.interim.temp";文件内容   const char kFTDCInterimTempFile[] = "metrics.interim.temp";
+    //FTDCFileWriter::open 
     boost::filesystem::path _interimTempFile;
 
     // Append only archive stream
+    //类似metrics.2021-11-09T08-10-30Z-00000文件得fd
     std::ofstream _archiveStream;
 
     // FTDC compressor

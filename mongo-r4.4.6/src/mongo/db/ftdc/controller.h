@@ -198,6 +198,7 @@ private:
     FTDCConfig _configTemp;
 
     // Set of periodic collectors  
+    //注册FTDCController::addPeriodicCollector   收集诊断数据FTDCController::doLoop()
     FTDCCollectorCollection _periodicCollectors;
 
     // Last seen sample document from periodic collectors

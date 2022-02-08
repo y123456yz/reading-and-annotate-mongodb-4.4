@@ -49,8 +49,12 @@
 
 namespace mongo {
 
+//boost::filesystem::path getInterimFile中使用
+//FTDCFileWriter._interimFile成员
 const char kFTDCInterimFile[] = "metrics.interim";
+//FTDCFileWriter._interimTempFile成员
 const char kFTDCInterimTempFile[] = "metrics.interim.temp";
+//参考FTDCFileManager::generateArchiveFileName，生成类似metrics.2021-11-09T08-10-30Z-00000得文件名
 const char kFTDCArchiveFile[] = "metrics";
 
 const char kFTDCIdField[] = "_id";
@@ -83,6 +87,7 @@ boost::filesystem::path appendFileName(const boost::filesystem::path& file, cons
 }
 }  // namespace
 
+//FTDCFileWriter::open   FTDCFileManager::recoverInterimFile()
 boost::filesystem::path getInterimFile(const boost::filesystem::path& file) {
     return appendFileName(file, kFTDCInterimFile);
 }

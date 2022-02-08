@@ -58,6 +58,7 @@ struct FTDCConfig {
      * Max Size of all FTDC files. If the total file size is > maxDirectorySizeBytes by summing up
      * all files in the FTDC directory, the extra files are removed.
      */
+    //diagnosticDataCollectionDirectorySizeMB≈‰÷√
     std::uint64_t maxDirectorySizeBytes;
 
     /**

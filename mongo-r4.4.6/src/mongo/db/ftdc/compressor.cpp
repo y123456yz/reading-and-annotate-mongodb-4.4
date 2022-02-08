@@ -98,7 +98,7 @@ FTDCCompressor::addSample(const BSONObj& sample, Date_t date) {
         _reset(sample, date);
         return {std::tuple<ConstDataRange, FTDCCompressor::CompressorState, Date_t>(
             std::get<0>(swCompressedSamples.getValue()),
-            CompressorState::kSchemaChanged,
+            CompressorState::kSchemaChanged, //schema发生了变化
             std::get<1>(swCompressedSamples.getValue()))};
     }
 
@@ -128,7 +128,7 @@ FTDCCompressor::addSample(const BSONObj& sample, Date_t date) {
 
         return {std::tuple<ConstDataRange, FTDCCompressor::CompressorState, Date_t>(
             std::get<0>(swCompressedSamples.getValue()),
-            CompressorState::kCompressorFull,
+            CompressorState::kCompressorFull, //diagnosticDataCollectionSamplesPerChunk采样数满了
             std::get<1>(swCompressedSamples.getValue()))};
     }
 
