@@ -115,6 +115,7 @@ CollectionAndChangedChunks getChangedChunks(OperationContext* opCtx,
     // Query the chunks which have changed
     repl::OpTime opTime;
     const std::vector<ChunkType> changedChunks = uassertStatusOK(
+		//ShardingCatalogClientImpl::getChunks
         Grid::get(opCtx)->catalogClient()->getChunks(opCtx,
                                                      diffQuery.query,
                                                      diffQuery.sort,

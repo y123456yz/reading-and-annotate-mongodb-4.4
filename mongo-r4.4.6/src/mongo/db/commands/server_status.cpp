@@ -53,6 +53,8 @@ namespace {
 constexpr auto kTimingSection = "timing"_sd;
 }  // namespace
 
+//db.serverstatus()执行，或者FTDCServerStatusCommandCollector中ftdc诊断自动构造命令执行
+
 //ftdc模块和db.serverstatus()命令都会走到这里
 class CmdServerStatus : public BasicCommand {
 public:

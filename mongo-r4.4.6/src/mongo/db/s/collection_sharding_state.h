@@ -58,6 +58,7 @@ namespace mongo {
  * lock on the respective collection. Different functions require different lock levels though, so
  * be sure to check the function-level comments for details.
  */
+//CollectionShardingRuntimeºÃ≥–∏√¿‡
 class CollectionShardingState {
 public:
     CollectionShardingState() = default;

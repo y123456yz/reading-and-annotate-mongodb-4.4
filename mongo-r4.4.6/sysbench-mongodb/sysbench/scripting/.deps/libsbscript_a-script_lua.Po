@@ -8,10 +8,10 @@ libsbscript_a-script_lua.o: script_lua.c /usr/include/stdc-predef.h \
  /usr/include/features.h /usr/include/sys/cdefs.h \
  /usr/include/bits/wordsize.h /usr/include/gnu/stubs.h \
  /usr/include/gnu/stubs-64.h \
- /usr/local/gcc-5.4.0/lib/gcc/x86_64-unknown-linux-gnu/5.4.0/include/stddef.h \
+ /usr/local/gcc-8.2.0/lib/gcc/x86_64-pc-linux-gnu/8.2.0/include/stddef.h \
  /usr/include/bits/types.h /usr/include/bits/typesizes.h \
  /usr/include/libio.h /usr/include/_G_config.h /usr/include/wchar.h \
- /usr/local/gcc-5.4.0/lib/gcc/x86_64-unknown-linux-gnu/5.4.0/include/stdarg.h \
+ /usr/local/gcc-8.2.0/lib/gcc/x86_64-pc-linux-gnu/8.2.0/include/stdarg.h \
  /usr/include/bits/stdio_lim.h /usr/include/bits/sys_errlist.h \
  /usr/include/bits/stdio.h /usr/include/unistd.h \
  /usr/include/bits/posix_opt.h /usr/include/bits/environments.h \
@@ -25,8 +25,8 @@ libsbscript_a-script_lua.o: script_lua.c /usr/include/stdc-predef.h \
  /usr/include/endian.h /usr/include/bits/endian.h \
  /usr/include/bits/byteswap.h /usr/include/bits/byteswap-16.h \
  /usr/include/xlocale.h \
- /usr/local/gcc-5.4.0/lib/gcc/x86_64-unknown-linux-gnu/5.4.0/include-fixed/limits.h \
- /usr/local/gcc-5.4.0/lib/gcc/x86_64-unknown-linux-gnu/5.4.0/include-fixed/syslimits.h \
+ /usr/local/gcc-8.2.0/lib/gcc/x86_64-pc-linux-gnu/8.2.0/include-fixed/limits.h \
+ /usr/local/gcc-8.2.0/lib/gcc/x86_64-pc-linux-gnu/8.2.0/include-fixed/syslimits.h \
  /usr/include/limits.h /usr/include/bits/posix1_lim.h \
  /usr/include/bits/local_lim.h /usr/include/linux/limits.h \
  /usr/include/bits/posix2_lim.h /usr/include/bits/xopen_lim.h \
@@ -39,9 +39,9 @@ libsbscript_a-script_lua.o: script_lua.c /usr/include/stdc-predef.h \
  /usr/include/alloca.h /usr/include/bits/stdlib-float.h \
  /usr/include/string.h /usr/include/bits/string.h \
  /usr/include/bits/string2.h /usr/include/bits/timex.h \
- /usr/local/gcc-5.4.0/lib/gcc/x86_64-unknown-linux-gnu/5.4.0/include/stdint.h \
+ /usr/local/gcc-8.2.0/lib/gcc/x86_64-pc-linux-gnu/8.2.0/include/stdint.h \
  /usr/include/stdint.h /usr/include/bits/wchar.h /usr/include/inttypes.h \
- /usr/local/gcc-5.4.0/lib/gcc/x86_64-unknown-linux-gnu/5.4.0/include/stdbool.h \
+ /usr/local/gcc-8.2.0/lib/gcc/x86_64-pc-linux-gnu/8.2.0/include/stdbool.h \
  /usr/local/include/libbson-1.0/bson/bson-atomic.h \
  /usr/local/include/libbson-1.0/bson/bson-context.h \
  /usr/local/include/libbson-1.0/bson/bson-types.h \
@@ -64,7 +64,6 @@ libsbscript_a-script_lua.o: script_lua.c /usr/include/stdc-predef.h \
  /usr/local/include/libbson-1.0/bson/bson-version-functions.h \
  /usr/local/include/libbson-1.0/bson/bson-writer.h \
  /usr/local/include/libbson-1.0/bson/bcon.h \
- /usr/local/include/libbson-1.0/bcon.h \
  /usr/local/include/libmongoc-1.0/mongoc.h \
  /usr/local/include/libmongoc-1.0/mongoc/mongoc.h \
  /usr/local/include/libbson-1.0/bson/bson.h \
@@ -104,6 +103,8 @@ libsbscript_a-script_lua.o: script_lua.c /usr/include/stdc-predef.h \
  /usr/include/netinet/tcp.h /usr/include/sys/un.h \
  /usr/local/include/libmongoc-1.0/mongoc/mongoc-gridfs-file.h \
  /usr/local/include/libmongoc-1.0/mongoc/mongoc-gridfs-file-list.h \
+ /usr/local/include/libmongoc-1.0/mongoc/mongoc-server-api.h \
+ /usr/local/include/libmongoc-1.0/mongoc/mongoc-optional.h \
  /usr/local/include/libmongoc-1.0/mongoc/mongoc-ssl.h \
  /usr/local/include/libmongoc-1.0/mongoc/mongoc-uri.h \
  /usr/local/include/libmongoc-1.0/mongoc/mongoc-client-pool.h \
@@ -166,7 +167,7 @@ libsbscript_a-script_lua.o: script_lua.c /usr/include/stdc-predef.h \
 
 /usr/include/gnu/stubs-64.h:
 
-/usr/local/gcc-5.4.0/lib/gcc/x86_64-unknown-linux-gnu/5.4.0/include/stddef.h:
+/usr/local/gcc-8.2.0/lib/gcc/x86_64-pc-linux-gnu/8.2.0/include/stddef.h:
 
 /usr/include/bits/types.h:
 
@@ -178,7 +179,7 @@ libsbscript_a-script_lua.o: script_lua.c /usr/include/stdc-predef.h \
 
 /usr/include/wchar.h:
 
-/usr/local/gcc-5.4.0/lib/gcc/x86_64-unknown-linux-gnu/5.4.0/include/stdarg.h:
+/usr/local/gcc-8.2.0/lib/gcc/x86_64-pc-linux-gnu/8.2.0/include/stdarg.h:
 
 /usr/include/bits/stdio_lim.h:
 
@@ -232,9 +233,9 @@ libsbscript_a-script_lua.o: script_lua.c /usr/include/stdc-predef.h \
 
 /usr/include/xlocale.h:
 
-/usr/local/gcc-5.4.0/lib/gcc/x86_64-unknown-linux-gnu/5.4.0/include-fixed/limits.h:
+/usr/local/gcc-8.2.0/lib/gcc/x86_64-pc-linux-gnu/8.2.0/include-fixed/limits.h:
 
-/usr/local/gcc-5.4.0/lib/gcc/x86_64-unknown-linux-gnu/5.4.0/include-fixed/syslimits.h:
+/usr/local/gcc-8.2.0/lib/gcc/x86_64-pc-linux-gnu/8.2.0/include-fixed/syslimits.h:
 
 /usr/include/limits.h:
 
@@ -286,7 +287,7 @@ libsbscript_a-script_lua.o: script_lua.c /usr/include/stdc-predef.h \
 
 /usr/include/bits/timex.h:
 
-/usr/local/gcc-5.4.0/lib/gcc/x86_64-unknown-linux-gnu/5.4.0/include/stdint.h:
+/usr/local/gcc-8.2.0/lib/gcc/x86_64-pc-linux-gnu/8.2.0/include/stdint.h:
 
 /usr/include/stdint.h:
 
@@ -294,7 +295,7 @@ libsbscript_a-script_lua.o: script_lua.c /usr/include/stdc-predef.h \
 
 /usr/include/inttypes.h:
 
-/usr/local/gcc-5.4.0/lib/gcc/x86_64-unknown-linux-gnu/5.4.0/include/stdbool.h:
+/usr/local/gcc-8.2.0/lib/gcc/x86_64-pc-linux-gnu/8.2.0/include/stdbool.h:
 
 /usr/local/include/libbson-1.0/bson/bson-atomic.h:
 
@@ -339,8 +340,6 @@ libsbscript_a-script_lua.o: script_lua.c /usr/include/stdc-predef.h \
 /usr/local/include/libbson-1.0/bson/bson-writer.h:
 
 /usr/local/include/libbson-1.0/bson/bcon.h:
-
-/usr/local/include/libbson-1.0/bcon.h:
 
 /usr/local/include/libmongoc-1.0/mongoc.h:
 
@@ -441,6 +440,10 @@ libsbscript_a-script_lua.o: script_lua.c /usr/include/stdc-predef.h \
 /usr/local/include/libmongoc-1.0/mongoc/mongoc-gridfs-file.h:
 
 /usr/local/include/libmongoc-1.0/mongoc/mongoc-gridfs-file-list.h:
+
+/usr/local/include/libmongoc-1.0/mongoc/mongoc-server-api.h:
+
+/usr/local/include/libmongoc-1.0/mongoc/mongoc-optional.h:
 
 /usr/local/include/libmongoc-1.0/mongoc/mongoc-ssl.h:
 

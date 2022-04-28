@@ -125,6 +125,7 @@ MetadataManager::MetadataManager(ServiceContext* serviceContext,
     _metadata.emplace_back(std::make_shared<CollectionMetadataTracker>(std::move(initialMetadata)));
 }
 
+//CollectionShardingRuntime::_getMetadata  CollectionShardingRuntime::_getCurrentMetadataIfKnown
 ScopedCollectionDescription MetadataManager::getActiveMetadata(
     const boost::optional<LogicalTime>& atClusterTime) {
     stdx::lock_guard<Latch> lg(_managerLock);
@@ -177,6 +178,7 @@ int MetadataManager::numberOfEmptyMetadataSnapshots() const {
     return emptyMetadataSnapshots;
 }
 
+//CollectionShardingRuntime::setFilteringMetadata
 void MetadataManager::setFilteringMetadata(CollectionMetadata remoteMetadata) {
     stdx::lock_guard<Latch> lg(_managerLock);
     invariant(!_metadata.empty());
@@ -210,6 +212,7 @@ void MetadataManager::setFilteringMetadata(CollectionMetadata remoteMetadata) {
           "remoteMetadata"_attr = remoteMetadata.toStringBasic());
 
     // Resolve any receiving chunks, which might have completed by now
+	//这里可能存在遍历的问题，可能会很慢
     for (auto it = _receivingChunks.begin(); it != _receivingChunks.end();) {
         const ChunkRange receivingRange(it->first, it->second);
 

@@ -54,6 +54,7 @@ MONGO_FAIL_POINT_DEFINE(skipShardFilteringMetadataRefresh);
 
 namespace {
 
+//execCommandDatabase->handleException->onShardVersionMismatchNoExcept
 void onShardVersionMismatch(OperationContext* opCtx,
                             const NamespaceString& nss,
                             ChunkVersion shardVersionReceived,
@@ -102,6 +103,7 @@ void onShardVersionMismatch(OperationContext* opCtx,
     forceShardFilteringMetadataRefresh(opCtx, nss, forceRefreshFromThisThread);
 }
 
+//execCommandDatabase->handleException->onShardVersionMismatchNoExcept
 void onDbVersionMismatch(OperationContext* opCtx,
                          const StringData dbName,
                          const DatabaseVersion& clientDbVersion,
@@ -131,6 +133,7 @@ void onDbVersionMismatch(OperationContext* opCtx,
 
 }  // namespace
 
+//execCommandDatabase->handleException  //SetShardVersion::errmsgRun
 Status onShardVersionMismatchNoExcept(OperationContext* opCtx,
                                       const NamespaceString& nss,
                                       ChunkVersion shardVersionReceived,
@@ -148,6 +151,8 @@ Status onShardVersionMismatchNoExcept(OperationContext* opCtx,
     }
 }
 
+
+//execCommandDatabase->handleException->onShardVersionMismatchNoExcept->onShardVersionMismatch
 ChunkVersion forceShardFilteringMetadataRefresh(OperationContext* opCtx,
                                                 const NamespaceString& nss,
                                                 bool forceRefreshFromThisThread) {
@@ -157,6 +162,7 @@ ChunkVersion forceShardFilteringMetadataRefresh(OperationContext* opCtx,
     auto* const shardingState = ShardingState::get(opCtx);
     invariant(shardingState->canAcceptShardedCommands());
 
+	//从config server获取最新chuk路由信息
     auto routingInfo =
         uassertStatusOK(Grid::get(opCtx)->catalogCache()->getCollectionRoutingInfoWithRefresh(
             opCtx, nss, forceRefreshFromThisThread));
@@ -241,6 +247,7 @@ ChunkVersion forceShardFilteringMetadataRefresh(OperationContext* opCtx,
     return newShardVersion;
 }
 
+//execCommandDatabase->handleException
 Status onDbVersionMismatchNoExcept(
     OperationContext* opCtx,
     const StringData dbName,

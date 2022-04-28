@@ -326,6 +326,7 @@ void forcePrimaryCollectionRefreshAndWaitForReplication(OperationContext* opCtx,
     uassertStatusOK(cmdResponse.commandStatus);
 
     uassertStatusOK(repl::ReplicationCoordinator::get(opCtx)->waitUntilOpTimeForRead(
+			//参考ReadConcernArgs
         opCtx, {LogicalTime::fromOperationTime(cmdResponse.response), boost::none}));
 }
 
@@ -1065,7 +1066,12 @@ void ShardServerCatalogCacheLoader::_runDbTasks(StringData dbName) {
               "Failed to persist metadata update for db due to shutdown",
               "db"_attr = dbName);
         inShutdown = true;
-    } catch (const DBException& ex) {
+    } catch (const DBException& ex) {	
+	/*
+	以下情况下，该命令不会返回从节点会卡住: 4.0.3版本
+	Fri Mar 18 13:14:46.868 I SHARDING [ShardServerCatalogCacheLoader-1927] Failed to persist chunk metadata update for collection 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa_DB.bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb_COLLECTION :: caused by :: InvalidNamespace: Failed to update the persisted chunk metadata for collection 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa_DB.bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb_COLLECTION' from '0|0||000000000000000000000000' to '1|0||62333e4eb3e60f88b9e94ecc'. Will be retried. :: caused by :: fully qualified namespace config.cache.chunks.aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa_DB.bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb_COLLECTION is too long (max is 120 bytes)
+	
+	*/
         LOGV2(22098,
               "Failed to persist chunk metadata update for database {db} {error}",
               "Failed to persist chunk metadata update for database",

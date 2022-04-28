@@ -144,6 +144,7 @@ CollectionShardingRuntime::getCurrentMetadataIfKnown() {
     return _getCurrentMetadataIfKnown(boost::none);
 }
 
+//onShardVersionMismatch  _getMetadataWithVersionCheckAt
 boost::optional<ChunkVersion> CollectionShardingRuntime::getCurrentShardVersionIfKnown() {
     stdx::lock_guard lk(_metadataManagerLock);
     switch (_metadataType) {
@@ -157,6 +158,9 @@ boost::optional<ChunkVersion> CollectionShardingRuntime::getCurrentShardVersionI
     MONGO_UNREACHABLE;
 }
 
+
+//AutoGetCollectionForReadCommand::AutoGetCollectionForReadCommand  读版本检查
+//assertCanWrite_inlock  //写版本检查
 void CollectionShardingRuntime::checkShardVersionOrThrow(OperationContext* opCtx) {
     (void)_getMetadataWithVersionCheckAt(opCtx, boost::none);
 }
@@ -193,6 +197,7 @@ std::shared_ptr<Notification<void>> CollectionShardingRuntime::getCriticalSectio
     return _critSec.getSignal(op);
 }
 
+//forceShardFilteringMetadataRefresh
 void CollectionShardingRuntime::setFilteringMetadata(OperationContext* opCtx,
                                                      CollectionMetadata newMetadata) {
     invariant(!newMetadata.isSharded() || !isNamespaceAlwaysUnsharded(_nss),
@@ -216,6 +221,7 @@ void CollectionShardingRuntime::setFilteringMetadata(OperationContext* opCtx,
             opCtx->getServiceContext(), _nss, _rangeDeleterExecutor, newMetadata);
         ++_numMetadataManagerChanges;
     } else {
+    	//MetadataManager::setFilteringMetadata
         _metadataManager->setFilteringMetadata(std::move(newMetadata));
     }
 }
@@ -310,6 +316,7 @@ boost::optional<ChunkRange> CollectionShardingRuntime::getNextOrphanRange(BSONOb
     return _metadataManager->getNextOrphanRange(from);
 }
 
+//_getMetadataWithVersionCheckAt
 boost::optional<ScopedCollectionDescription> CollectionShardingRuntime::_getCurrentMetadataIfKnown(
     const boost::optional<LogicalTime>& atClusterTime) {
     stdx::lock_guard lk(_metadataManagerLock);
@@ -324,6 +331,8 @@ boost::optional<ScopedCollectionDescription> CollectionShardingRuntime::_getCurr
     MONGO_UNREACHABLE;
 }
 
+//CollectionShardingRuntime::checkShardVersionOrThrow
+//路由版本检查，不一致则从config中刷新元数据
 boost::optional<ScopedCollectionDescription>
 CollectionShardingRuntime::_getMetadataWithVersionCheckAt(
     OperationContext* opCtx, const boost::optional<mongo::LogicalTime>& atClusterTime) {
@@ -398,6 +407,9 @@ CollectionShardingRuntime::_getMetadataWithVersionCheckAt(
     if (wantedShardVersion.majorVersion() != receivedShardVersion.majorVersion()) {
         // Could be > or < - wanted is > if this is the source of a migration, wanted < if this is
         // the target of a migration
+
+		//也就是日志中的打印出的查询版本不匹配情况下的慢查，会先获取元数据，然后打印
+		//外层execCommandDatabase检测到异常后，会从config获取最新chunk路由信息
         uasserted(std::move(sci), str::stream() << "version mismatch detected for " << _nss.ns());
     }
 

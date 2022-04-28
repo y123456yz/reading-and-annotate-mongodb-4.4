@@ -261,7 +261,9 @@ public:
     std::string toString() const;
 
 private:
+    //∞Ê±æ–≈œ¢
     uint64_t _combined;
+    //epoch
     OID _epoch;
 
     /**

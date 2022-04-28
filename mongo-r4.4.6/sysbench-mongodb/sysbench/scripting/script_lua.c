@@ -23,7 +23,7 @@
 
 #ifdef USE_MONGODB
 #include <bson.h>
-#include <bcon.h>
+//#include <bcon.h>
 #include <mongoc.h>
 #endif
 #include <assert.h>
@@ -1343,7 +1343,7 @@ int sb_lua_mongodb_create_index(lua_State *L)
   return mongodb_create_index(ctxt->con, sb_get_value_string("mongo-database-name"), collection_name, indexed_field_name, indexed_field_name2);
 }
 
-int sb_lua_mongodb_insert1(lua_State *L)
+int sb_lua_mongodb_insert1xxx(lua_State *L)
 {
   sb_lua_ctxt_t *ctxt = sb_lua_get_context(L);
   bson_t *doc;
@@ -1396,7 +1396,7 @@ int sb_lua_mongodb_insert_src(lua_State *L)
   return mongodb_insert_document(ctxt->con, sb_get_value_string("mongo-database-name"),col,doc);
 }
 
-int sb_lua_mongodb_insert1(lua_State *L)
+int sb_lua_mongodb_insert(lua_State *L)
 {
   sb_lua_ctxt_t *ctxt = sb_lua_get_context(L);
   bson_t *doc;
@@ -1462,7 +1462,7 @@ int sb_lua_mongodb_oltp_insert(lua_State *L)
 }  
 
 
-int sb_lua_mongodb_oltp_insert(lua_State *L)
+int sb_lua_mongodb_oltp_insert1(lua_State *L)
 {
   sb_lua_ctxt_t *ctxt = sb_lua_get_context(L);
   bson_t *doc;

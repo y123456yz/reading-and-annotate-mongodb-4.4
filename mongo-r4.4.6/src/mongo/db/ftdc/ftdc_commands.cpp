@@ -46,7 +46,7 @@ namespace {
  *
  * Document will be empty if FTDC has never run.
  */
-// db.runCommand({getDiagnosticData:1})
+// script_lua
 class GetDiagnosticDataCommand final : public BasicCommand {
 public:
     GetDiagnosticDataCommand() : BasicCommand("getDiagnosticData") {}

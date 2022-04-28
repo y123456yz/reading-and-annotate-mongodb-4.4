@@ -84,6 +84,7 @@ public:
         out->push_back(Privilege(ResourcePattern::forClusterResource(), actions));
     }
 
+	//SetShardVersion::errmsgRun
     bool errmsgRun(OperationContext* opCtx,
                    const std::string&,
                    const BSONObj& cmdObj,

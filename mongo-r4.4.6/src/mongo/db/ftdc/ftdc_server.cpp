@@ -216,7 +216,7 @@ public:
         // "defaultRWConcern" is excluded because it changes rarely and instead included in rotation
         // "mirroredReads" is included to append the number of mirror-able operations observed and
         // mirrored by this process in FTDC collections.
-
+		////db.runCommand( { serverStatus: 1, sharding:false, timing:false, defaultRWConcern:false, tcmalloc: 2 } )
         BSONObjBuilder commandBuilder;
         commandBuilder.append(kCommand, 1);
         commandBuilder.append("sharding", false);

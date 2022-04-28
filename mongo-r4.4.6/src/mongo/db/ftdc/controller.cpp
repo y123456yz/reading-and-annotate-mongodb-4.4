@@ -335,7 +335,7 @@ void FTDCController::doLoop() noexcept {
         auto now = getGlobalServiceContext()->getPreciseClockSource()->now();
 
         // Get next time to run at
-        //diagnosticDataCollectionPeriodMillis配置，默认一分钟，ftdc线程主循环体采样定时周期
+        //diagnosticDataCollectionPeriodMillis配置，默认一秒钟，ftdc线程主循环体采样定时周期
         auto next_time = FTDCUtil::roundTime(now, _config.period);
 
         // Wait for the next run or signal to shutdown

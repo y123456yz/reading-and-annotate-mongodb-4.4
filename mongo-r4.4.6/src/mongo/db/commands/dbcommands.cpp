@@ -629,6 +629,8 @@ public:
 
 } cmdCollectionStats;
 
+//执行use test  db.test.hideIndex( "e_1_f_1_c_1_a_1" )可以进行该操作隐藏
+//或者db.runCommand( {collMod: 'test', index: { keyPattern:{e:1, f:1,c:1,a:1},   hidden: false    } } )
 class CollectionModCommand : public BasicCommand {
 public:
     CollectionModCommand() : BasicCommand("collMod") {}

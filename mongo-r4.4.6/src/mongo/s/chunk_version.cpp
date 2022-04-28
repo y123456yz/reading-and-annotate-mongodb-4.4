@@ -129,6 +129,22 @@ void ChunkVersion::appendWithField(BSONObjBuilder* out, StringData field) const 
     }
 }
 
+/*
+mongos> db.runCommand({getShardVersion :"test.MD_FCT_IER_DETAIL"})
+{
+        "version" : Timestamp(42301, 3330879),
+        "versionEpoch" : ObjectId("623c0ce20a1bb4f96d5ca748"),
+        "ok" : 1,
+        "$clusterTime" : {
+                "clusterTime" : Timestamp(1649486470, 1),
+                "signature" : {
+                        "hash" : BinData(0,"AAAAAAAAAAAAAAAAAAAAAAAAAAA="),
+                        "keyId" : NumberLong(0)
+                }
+        },
+        "operationTime" : Timestamp(1649486470, 1)
+}
+*/
 void ChunkVersion::appendLegacyWithField(BSONObjBuilder* out, StringData field) const {
     out->appendTimestamp(field, _combined);
     out->append(field + "Epoch", _epoch);

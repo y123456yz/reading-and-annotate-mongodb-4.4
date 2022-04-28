@@ -186,6 +186,8 @@ public:
         CurOp::get(opCtx)->debug().errInfo = getStatusFromCommandResult(replyObj);
     }
 
+	//execCommandDatabase
+	//路由chunk版本检查不一致
     void handleException(const DBException& e, OperationContext* opCtx) const override {
         // If we got a stale config, wait in case the operation is stuck in a critical section
         if (auto sce = e.extraInfo<StaleConfigInfo>()) {
@@ -211,6 +213,7 @@ public:
             if (!opCtx->getClient()->isInDirectClient()) {
                 // We already have the StaleConfig exception, so just swallow any errors due to
                 // refresh
+                //路由版本检查
                 onShardVersionMismatchNoExcept(opCtx, sce->getNss(), sce->getVersionReceived())
                     .ignore();
             }

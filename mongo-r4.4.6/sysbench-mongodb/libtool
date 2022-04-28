@@ -272,10 +272,10 @@ finish_eval=""
 hardcode_into_libs=yes
 
 # Compile-time system search path for libraries.
-sys_lib_search_path_spec="/usr/local/gcc-5.4.0/lib/gcc/x86_64-unknown-linux-gnu/5.4.0 /usr/local/gcc-5.4.0/lib64 /lib64 /usr/lib64 "
+sys_lib_search_path_spec="/usr/local/gcc-8.2.0/lib/gcc/x86_64-pc-linux-gnu/8.2.0 /usr/local/gcc-8.2.0/lib64 /lib64 /usr/lib64 "
 
 # Run-time system search path for libraries.
-sys_lib_dlsearch_path_spec="/lib64 /usr/lib64 /lib /usr/lib /usr/lib64/mysql "
+sys_lib_dlsearch_path_spec="/lib64 /usr/lib64 /lib /usr/lib /usr/lib64//bind9-export/ /usr/lib64/dyninst /usr/lib64/mysql /lib /lib64 /usr/lib /usr/lib64 /usr/local/lib /usr/local/lib64 /usr/local/gmp-6.1.0/lib /usr/local/mpc-1.0.3/lib /usr/local/mpfr-3.1.4/lib "
 
 # Whether dlopen is supported.
 dlopen_support=unknown
@@ -317,7 +317,7 @@ pic_flag=" -fPIC -DPIC"
 wl="-Wl,"
 
 # Compiler flag to prevent dynamic linking.
-link_static_flag=""
+link_static_flag="-static"
 
 # Does compiler simultaneously support -c and -o options?
 compiler_c_o="yes"

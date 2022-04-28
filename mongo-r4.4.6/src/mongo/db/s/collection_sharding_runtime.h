@@ -45,6 +45,7 @@ extern AtomicWord<int> migrationLockAcquisitionMaxWaitMS;
  * See the comments for CollectionShardingState for more information on how this class fits in the
  * sharding architecture.
  */
+ 
 class CollectionShardingRuntime final : public CollectionShardingState,
                                         public Decorable<CollectionShardingRuntime> {
 public:
